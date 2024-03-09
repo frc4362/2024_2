@@ -41,12 +41,12 @@ public final class Arm implements Subsystem {
 
 
     private static final Rotation2d FLIP_ANGLE = Rotation2d.fromRotations(0.5);
-    private static final double SHOULDER_MIN = -0.091; // going to assume this is the default position
-    private static final double SHOULDER_MAX = 0.168;
+    private static final double SHOULDER_MIN = -0.081; // going to assume this is the default position
+    private static final double SHOULDER_MAX = 0.16925;
     private static final double ELBOW_MIN = 0;
-    private static final double ELBOW_MAX = 0.34;
+    private static final double ELBOW_MAX = 0.33;
     private static final Rotation2d SHOULDER_DEFAULT = Rotation2d.fromRotations(SHOULDER_MIN);
-    private static final Rotation2d SHOOTER_ANGLE_BOTTOM = Rotation2d.fromDegrees(28.5);
+    private static final Rotation2d SHOOTER_ANGLE_BOTTOM = Rotation2d.fromDegrees(0.0);
 
     private final StatusSignal<Double>
             m_rotationElbowSignal, m_rotationShoulderSignal,
@@ -74,7 +74,7 @@ public final class Arm implements Subsystem {
         AMP(0.075, 0.135),
 //        AMP(0.126, 0.095),
         CLIMB_PLACE(1.65, 0.0),
-        CLIMB_PLACE_2(1.65, 0.34),
+//        CLIMB_PLACE_2(1.65, 0.34),
         TRAP(0.0, 0.0);
 
         public final double shoulderPositionsRotations, elbowPositionRotations;
@@ -114,21 +114,22 @@ public final class Arm implements Subsystem {
         elbowConfig.Slot0.kS = 0.5;
         elbowConfig.Slot0.kV = 0.0;
         elbowConfig.Slot0.kA = 0.0;
-        elbowConfig.Slot0.kP = 100.0;
+        elbowConfig.Slot0.kP = 200.00;
         elbowConfig.Slot0.kI = 0.0;
         elbowConfig.Slot0.kD = 0.0;
         elbowConfig.Slot0.kG = 0.0;
         TalonUtils.configureTalon(elbowConfig, m_elbow);
+        m_elbow.setPosition(ELBOW_MIN);
 
         final var shoulderConfig = new TalonFXConfiguration();
         shoulderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         shoulderConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         shoulderConfig.MotionMagic.MotionMagicExpo_kV = 0.5;
         shoulderConfig.MotionMagic.MotionMagicExpo_kA = 1.0;
-        shoulderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-        shoulderConfig.Feedback.FeedbackRemoteSensorID = 51;
-        shoulderConfig.Feedback.RotorToSensorRatio = 112.5; // used  to be 157.5 : 1
-        shoulderConfig.Feedback.SensorToMechanismRatio = 1;
+//        shoulderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+//        shoulderConfig.Feedback.FeedbackRemoteSensorID = 51;
+        shoulderConfig.Feedback.RotorToSensorRatio = 1; // used  to be 157.5 : 1
+        shoulderConfig.Feedback.SensorToMechanismRatio = 112.5;
         shoulderConfig.Slot0.kS = 0.5;
         shoulderConfig.Slot0.kV = 0.0;
         shoulderConfig.Slot0.kA = 0.0;
@@ -137,6 +138,7 @@ public final class Arm implements Subsystem {
         shoulderConfig.Slot0.kD = 0.0;
         shoulderConfig.Slot0.kG = 0.0;
         TalonUtils.configureTalon(shoulderConfig, m_shoulder);
+        m_shoulder.setPosition(SHOULDER_MIN);
 
         // grab status signals to monitor velocity (RPS) and torque current (A)
         m_rotationElbowSignal = m_elbow.getPosition();
@@ -252,7 +254,7 @@ public final class Arm implements Subsystem {
     }
 
     public boolean atReference(final ShotParam param) {
-        return MathUtil.isNear(m_periodicIO.elbowRotation, param.getAngle().minus(SHOOTER_ANGLE_BOTTOM).getRotations(), 0.015);
+        return MathUtil.isNear(m_periodicIO.elbowRotation, param.getAngle().minus(SHOOTER_ANGLE_BOTTOM).getRotations(), 0.005);
     }
 
     public boolean atReference() {

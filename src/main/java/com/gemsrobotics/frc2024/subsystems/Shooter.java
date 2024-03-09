@@ -25,7 +25,7 @@ import static edu.wpi.first.math.MathUtil.isNear;
 public final class Shooter implements Subsystem {
 	private static final String NT_KEY = "shooter";
 
-	private static final double SHOOTER_RATIO = 1.0 / 1.7; // 1 motor rotation is 1.7 shooter wheel rotations
+	private static final double SHOOTER_RATIO = 1.0 / 1.42; // 1 motor rotation is 1.7 shooter wheel rotations
 	private static final double NOTE_DETECTED_AMPS = 30.0;
 	private static final double IDLE_VELOCITY_RPS = 0.0;//2.0;
 
@@ -112,12 +112,13 @@ public final class Shooter implements Subsystem {
 		wheelConfig.Feedback.RotorToSensorRatio = 1.0;
 		wheelConfig.Feedback.SensorToMechanismRatio = SHOOTER_RATIO;
 		// velocity gains
-		wheelConfig.Slot0.kP = 0.15;
+		wheelConfig.Slot0.kP = 0.35;
 		wheelConfig.Slot0.kI = 0.0;
 		wheelConfig.Slot0.kD = 0.0;
-		// Falcon 500 is a 500kV motor, 500rpm per V = 8.333 * 1.7 rps per V, 1/14.16100 = 0.07 volts / Rotation per second
-		wheelConfig.Slot0.kV = 0.072;
-		wheelConfig.Slot0.kS = 0.38;
+		// Falcon 500 is a 500kV motor, 500rpm per V = 8.333 * 1.7 rps per V, 1/14.16 = 0.07 volts / Rotation per second
+		// Falcon 500 is a 500kV motor, 500rpm per V = 8.333 * 1.42 rps per V, 1/11.8 = 0.0846 volts / Rotation per second
+		wheelConfig.Slot0.kV = 0.0846;
+		wheelConfig.Slot0.kS = 0.5;
 		wheelConfig.Slot0.kA = 0.5;
 		// positional gains
 		wheelConfig.Slot1.kP = 3.0; // volts per rotation
@@ -261,8 +262,8 @@ public final class Shooter implements Subsystem {
 
 	public boolean isReadyToShoot() {
 		return m_periodicIO.state == State.SHOOTING
-				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,3)
-				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,3);
+				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,1)
+				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,1);
 	}
 
 	public void setVelocity(final double rpsLeft, final double rpsRight) {

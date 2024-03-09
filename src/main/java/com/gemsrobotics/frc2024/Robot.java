@@ -67,7 +67,7 @@ public class Robot extends TimedRobot {
 		m_feederDutyCycle = myTable.getDoubleTopic("feeder_duty").subscribe(0.0);
 
 		SmartDashboard.putNumber("shooter_set_rps", 85.0);
-		SmartDashboard.putNumber("shooter_angle_degrees", 28.5);
+		SmartDashboard.putNumber("shooter_angle_degrees", 0.0);
 
 		CommandScheduler.getInstance().registerSubsystem(
 				m_arm,
@@ -78,6 +78,7 @@ public class Robot extends TimedRobot {
 				m_climber,
 				m_leds,
 				Bender.getInstance(),
+				SimpleTargetServer.getInstance(),
 				m_superstructure
 		);
 
@@ -159,15 +160,7 @@ public class Robot extends TimedRobot {
 					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
 					 && !m_oi.getCopilot().getXButton()
 		) {
-//			m_drive.setOpenLoopAiming(
-//					m_oi.getWantedSwerveTranslation(),
-//					m_superstructure.getGoalTurnFeedback());
-
-			if (m_superstructure.isUsingFallbackAiming()) {
-				m_drive.setOpenLoopAiming(m_oi.getWantedSwerveTranslation(), m_superstructure.getGoalTurnFeedback());
-			} else  {
-				m_drive.setAimingAtGoal(m_oi.getWantedSwerveTranslation());
-			}
+			m_drive.setAimingAtGoal(m_oi.getWantedSwerveTranslation());
 		} else {
 			m_drive.setOpenLoopJoysticks(
 					m_oi.getWantedSwerveTranslation(),

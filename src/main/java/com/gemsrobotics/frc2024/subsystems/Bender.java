@@ -97,6 +97,7 @@ public class Bender implements Subsystem {
         m_periodicIO.currentDrawBenderAmps = m_currentDrawBender.refresh().getValue();
         m_currentDrawBenderPublisher.set(m_periodicIO.currentDrawBenderAmps);
 
+//        m_bender.setControl(new NeutralOut());
 
         if (m_doSlam) {
             m_bender.setControl(m_deployedPositionVoltage.withPosition(State.DEPLOYED.rotations));

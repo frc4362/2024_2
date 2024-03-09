@@ -1,5 +1,5 @@
 {
-    "version": "v0.2.2",
+    "version": "v0.3",
     "robotConfiguration": {
         "mass": 56,
         "rotationalInertia": 3.34,
@@ -1737,6 +1737,7 @@
                     "timestamp": 7.541530264075101
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -1810,7 +1811,9 @@
             "usesControlIntervalGuessing": false,
             "defaultControlIntervalCount": 20,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         },
         "Milford 6 ish": {
             "waypoints": [
@@ -3752,6 +3755,7 @@
                     "timestamp": 13.917825409022294
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -3799,7 +3803,9 @@
             "usesControlIntervalGuessing": true,
             "defaultControlIntervalCount": 40,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         },
         "Source Side": {
             "waypoints": [
@@ -5048,6 +5054,7 @@
                     "timestamp": 8.971096666182193
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -5126,7 +5133,9 @@
             "usesControlIntervalGuessing": true,
             "defaultControlIntervalCount": 40,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         },
         "Orbit7 Part 1": {
             "waypoints": [
@@ -5250,6 +5259,7 @@
                     "timestamp": 0.6759845266057364
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -5267,7 +5277,9 @@
             "usesControlIntervalGuessing": false,
             "defaultControlIntervalCount": 10,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         },
         "Orbit7 Part 2": {
             "waypoints": [
@@ -5391,6 +5403,7 @@
                     "timestamp": 0.48202711299063006
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -5414,7 +5427,9 @@
             "usesControlIntervalGuessing": false,
             "defaultControlIntervalCount": 10,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         },
         "Orbit7 Part 3": {
             "waypoints": [
@@ -6951,6 +6966,7 @@
                     "timestamp": 8.848391615708834
                 }
             ],
+            "trajectoryWaypoints": [],
             "constraints": [
                 {
                     "scope": [
@@ -6999,7 +7015,9 @@
             "usesControlIntervalGuessing": false,
             "defaultControlIntervalCount": 20,
             "usesDefaultFieldObstacles": true,
-            "circleObstacles": []
+            "circleObstacles": [],
+            "eventMarkers": [],
+            "isTrajectoryStale": true
         }
     },
     "splitTrajectoriesAtStopPoints": true,

@@ -13,13 +13,15 @@ public class ShotLogger {
     private int m_shotCount;
 
     public ShotLogger() {
+        DataLogManager.start();
+
         m_log = DataLogManager.getLog();
         m_shotLog = new StringLogEntry(m_log, "/shots");
         m_shotCount = 0;
     }
 
     public void logShot(final ShotParam requested, double shotSpeed, Rotation2d shotAngle, double shotDistance) {
-        String str = "{requested = " + requested.getVelocityRps() + ", angle = " + requested.getAngle().toString() + "; actual: v = " + String.valueOf(shotSpeed) + ", angle = " + shotAngle.toString() + "; @ a distance of " + shotDistance;
+        String str = "{requested = " + requested.getVelocityRps() + ", angle = " + requested.getAngle().toString() + "; actual: v = " + shotSpeed + ", angle = " + shotAngle.toString() + "; @ a distance of " + shotDistance;
         m_shotLog.append(str);
     }
 }

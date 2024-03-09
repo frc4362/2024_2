@@ -9,6 +9,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import com.gemsrobotics.frc2024.Constants;
+import com.gemsrobotics.frc2024.OI;
 import com.gemsrobotics.lib.TalonUtils;
 import com.gemsrobotics.lib.math.Units;
 import edu.wpi.first.math.filter.LinearFilter;
@@ -17,6 +18,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -96,7 +98,12 @@ public class Fintake implements Subsystem {
 	private final PositionVoltage m_deployerRequest;
 	private boolean m_forcedOut;
 
+	private final Timer m_noteGetTimer;
+
 	private Fintake() {
+		m_noteGetTimer = new Timer();
+		m_noteGetTimer.stop();
+
 		m_intake = new TalonFX(40, Constants.AUX_BUS_NAME);
 		final var intakeConfig = new TalonFXConfiguration();
 		intakeConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -182,6 +189,13 @@ public class Fintake implements Subsystem {
 
 	@Override
 	public void periodic() {
+		if (m_noteGetTimer.hasElapsed(.5)) {
+			m_noteGetTimer.stop();
+			m_noteGetTimer.reset();
+			OI m_oi = OI.getInstance();
+			m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.0); // 0 to 1
+		}
+
 		m_periodicIO.intakeCurrentDrawAmps = m_intakeDrawAmpsSignal.refresh().getValue();
 		m_intakeCurrentPublisher.set(m_periodicIO.intakeCurrentDrawAmps);
 
@@ -226,7 +240,10 @@ public class Fintake implements Subsystem {
 
 						if (newState == State.HOLDING) {
 							LEDManager.getInstance().playNoteGetAnimation();
-
+							if (DriverStation.isAutonomous()) {
+								OI m_oi = OI.getInstance();
+								m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.5); // 0 to 1
+							}
 							m_periodicIO.lastIntakeTimestamp = Timer.getFPGATimestamp();
 							m_periodicIO.nextReadyToShootTime = m_periodicIO.lastIntakeTimestamp + INTAKE_SHOT_PROTECTION_SECONDS;
 							m_periodicIO.hasBackedOut = false;
@@ -234,7 +251,6 @@ public class Fintake implements Subsystem {
 						}
 
 						break;
-
 					case HOLDING:
 						// if we want to intake and we are holding a note keep holding it
 						m_deployerRequest.Position = INTAKE_STARTING_ROTATIONS;

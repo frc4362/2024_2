@@ -3,6 +3,7 @@ package com.gemsrobotics.frc2024.subsystems;
 import com.gemsrobotics.frc2024.Constants;
 import com.gemsrobotics.frc2024.NewTargetServer;
 import com.gemsrobotics.frc2024.ShotParam;
+import com.gemsrobotics.frc2024.SimpleTargetServer;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 import com.gemsrobotics.lib.data.Pose2dRollingAverage;
@@ -67,6 +68,7 @@ public final class Superstructure implements Subsystem {
 	private final Arm m_arm;
 	private final Bender m_bender;
 	private final NewTargetServer m_targetServer;
+	private final SimpleTargetServer m_simpleTargetServer;
 
 	private final DoublePublisher m_goalDistancePublisher;
 	private final StringPublisher m_wantedStatePublisher;
@@ -97,6 +99,8 @@ public final class Superstructure implements Subsystem {
 		m_bender = Bender.getInstance();
 		m_leds = LEDManager.getInstance();
 		m_fintake = Fintake.getInstance();
+		m_simpleTargetServer = SimpleTargetServer.getInstance();
+		m_logger = new ShotLogger();
 
 		m_stateChanged = true;
 		m_isStrictlyLocalizing = true;
@@ -238,7 +242,7 @@ public final class Superstructure implements Subsystem {
 			m_fintake.setWantedState(Fintake.WantedState.INTAKING_AND_SHOOTING);
 		} else if (isReadyToShoot(true) && m_feedingAllowed) {
 			if (!m_hasLoggedShot) {
-//				m_logger.logShot(params, m_shooter.getMeasuredSpeed(), m_arm.getElbowAngle(), getDistanceToGoal());
+				m_logger.logShot(params, m_shooter.getMeasuredSpeed(), m_arm.getElbowAngle(), getDistanceToGoal());
 				m_hasLoggedShot = true;
 			}
 
@@ -250,7 +254,6 @@ public final class Superstructure implements Subsystem {
 
 		return applyWantedState();
 	}
-
 	private SystemState handleIntaking() {
 		if (m_stateChanged) {
 			m_fintake.clearPiece();
@@ -349,6 +352,7 @@ public final class Superstructure implements Subsystem {
 		final boolean stopped = m_drive.getObserver().getMeasuredVelocity().getNorm() < MAX_SHOOTING_SPEED_METERS_PER_SECOND;
 		final boolean shooterAtSpeed = m_shooter.isReadyToShoot();
 		final boolean turningFast = !waitForStopRotating || Math.abs(m_drive.getPigeon2().getRate()) < 1;
+		final boolean armElevationCorrect = m_arm.atReference(getDesiredShotParams());
 
 		final List<String> reasons = new ArrayList<>();
 
@@ -364,25 +368,29 @@ public final class Superstructure implements Subsystem {
 			reasons.add("turning too fast");
 		}
 
+		if (!armElevationCorrect) {
+			reasons.add("elbow elevation incorrect");
+		}
+
 		m_shootingStatePublisher.set(reasons.toArray(new String[0]));
 
-		return stopped && shooterAtSpeed && turningFast;
+		return stopped && shooterAtSpeed && turningFast && armElevationCorrect;
 	}
 
 	private double getDistanceToGoal() {
 		return m_allianceConstants.getSpeakerLocationMeters().getDistance(m_drive.getState().Pose.getTranslation());
-//		final var cameraToTarget = m_targetServer.getCameraToTarget();
+//		final var cameraToTarget = m_simpleTargetServer.getCameraToTarget();
 //		return cameraToTarget.map(measure -> measure.getTranslation().getNorm()).orElse(0.0);
 	}
 
-	private static final PIDController TARGET_PID = new PIDController(1.2, 0.0, 0.2);
+	private static final PIDController TARGET_PID = new PIDController(0.3, 0.0, 0.2);
 	static {
-		TARGET_PID.setTolerance(Rotation2d.fromDegrees(0.5).getRadians());
+		TARGET_PID.setTolerance(Rotation2d.fromDegrees(1.).getRadians());
 	}
 
 	private ShotParam getDashboardShooterParams() {
 		return new ShotParam(
-				Rotation2d.fromDegrees(SmartDashboard.getNumber("shooter_angle_degrees", 28.5)),
+				Rotation2d.fromDegrees(SmartDashboard.getNumber("shooter_angle_degrees", 0.0)),
 				SmartDashboard.getNumber("shooter_set_rps", 0.0));
 	}
 
@@ -390,8 +398,8 @@ public final class Superstructure implements Subsystem {
 		return Constants.getShotParameters(getDistanceToGoal());
 	}
 
-	public double getGoalTurnFeedback() {
-		return m_targetServer.getFallbackCameraToTarget().map(tf -> TARGET_PID.calculate(-tf.getRotation().getRadians())).orElse(0.0);
+	public Optional<Double> getGoalTurnFeedback() {
+		return m_targetServer.getFallbackCameraToTarget().map(tf -> TARGET_PID.calculate(-tf.getRotation().getRadians()));
 	}
 
 	public void setAlliance() {

@@ -118,7 +118,7 @@ public final class Shooter implements Subsystem {
 		// Falcon 500 is a 500kV motor, 500rpm per V = 8.333 * 1.7 rps per V, 1/14.16 = 0.07 volts / Rotation per second
 		// Falcon 500 is a 500kV motor, 500rpm per V = 8.333 * 1.42 rps per V, 1/11.8 = 0.0846 volts / Rotation per second
 		wheelConfig.Slot0.kV = 0.0846;
-		wheelConfig.Slot0.kS = 0.5;
+		wheelConfig.Slot0.kS = 0.7;
 		wheelConfig.Slot0.kA = 0.5;
 		// positional gains
 		wheelConfig.Slot1.kP = 3.0; // volts per rotation
@@ -226,8 +226,8 @@ public final class Shooter implements Subsystem {
 					m_wheelLeft.setControl(m_positionRequest.withPosition(m_periodicIO.catchNoteGoal).withOverrideBrakeDurNeutral(true));
 					m_wheelRight.setControl(m_followRequest);
 				} else {
-					m_wheelLeft.setControl(m_velocityRequest.withVelocity(3));
-					m_wheelRight.setControl(m_velocityRequest.withVelocity(3));
+					m_wheelLeft.setControl(m_velocityRequest.withVelocity(5));
+					m_wheelRight.setControl(m_velocityRequest.withVelocity(5));
 
 					if (currentNow < 25 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
 						accelerated = true;
@@ -262,8 +262,8 @@ public final class Shooter implements Subsystem {
 
 	public boolean isReadyToShoot() {
 		return m_periodicIO.state == State.SHOOTING
-				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,1)
-				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,1);
+				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,3)
+				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,3);
 	}
 
 	public void setVelocity(final double rpsLeft, final double rpsRight) {

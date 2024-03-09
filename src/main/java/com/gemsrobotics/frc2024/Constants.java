@@ -44,22 +44,20 @@ public final class Constants {
 	private static final double[][] SHOT_CALS = {
 			// first cal is subwoofer shot
 
-			{0.0, 42.5, 120},
-			{1.96, 25, 120},
-			{2.35, 20, 120},
-			{2.67, 18.1, 120},
-			{3.00, 15.75, 120},
-			{3.55, 13.5, 120},
-			{3.71, 12.0, 120},
-			{4.11, 10.5, 120},
-			{4.55, 9.35, 120},
-			{5.2, 7.85, 120},
-			{6.08, 6.87, 120},
-			{6.8, 6.1, 120},
+			{1.3, 42.5, 120.0},
+			{2.22, 24.8, 120.0},
+			{2.45, 23.5, 120.0},
+			{2.71, 20.8, 120.0},
+			{2.97, 18.0, 120.0},
+			{3.52, 14.75, 120.0},
+			{3.95, 13.75, 120.0},
+			{4.25, 12.5, 120.0},
+			{4.53, 11.85, 120.0},
+			{4.8, 11.5, 120.0}
 	};
 
-	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2] + 2);
-	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2] + 2);
+	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
+	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
 
 	private static InterpolatingTreeMap<Double,ShotParam> SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
 	static {
@@ -68,7 +66,7 @@ public final class Constants {
 				continue;
 			}
 
-			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1]), cals[2]+5));
+			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1]), cals[2]));
 		}
 	}
 
@@ -83,7 +81,7 @@ public final class Constants {
 		}
 	}
 
-	public static final double MAX_SUGGESTED_RANGE_METERS = 4.35;
+	public static final double MAX_SUGGESTED_RANGE_METERS = 4.75;
 	public static final double LED_SHUTOFF_RANGE_METERS = 8.0;
 
 	public static final PIDController SWERVE_TURN_CONTROLLER = new PIDController(5.0, 0, 0);

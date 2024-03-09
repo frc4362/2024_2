@@ -18,4 +18,9 @@ public class ShotParam {
     public double getVelocityRps() {
         return m_velocityRps;
     }
+
+    @Override
+    public String toString() {
+        return String.format("(%.2f, %.2f)", m_angle.getDegrees(), m_velocityRps);
+    }
 }

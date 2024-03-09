@@ -74,6 +74,7 @@ public final class Superstructure implements Subsystem {
 	private final StringPublisher m_wantedStatePublisher;
 	private final StringPublisher m_systemStatePublisher;
 	private final StringPublisher m_localizationStatePublisher;
+	private final StringPublisher m_shotParamPublisher;
 	private final StringArrayPublisher m_shootingStatePublisher;
 
 	private Optional<ShotParam> m_overrideShotParam;
@@ -119,6 +120,7 @@ public final class Superstructure implements Subsystem {
 		m_wantedStatePublisher = myTable.getStringTopic(WANTED_STATE_KEY).publish();
 		m_systemStatePublisher = myTable.getStringTopic(SYSTEM_STATE_KEY).publish();
 		m_localizationStatePublisher = myTable.getStringTopic(LOCALIZATION_STATE_KEY).publish();
+		m_shotParamPublisher = myTable.getStringTopic("shot_param").publish();
 		m_goalDistancePublisher = myTable.getDoubleTopic(GOAL_DISTANCE_KEY).publish();
 		m_shootingStatePublisher = myTable.getStringArrayTopic("shooting_state").publish();
 
@@ -132,6 +134,7 @@ public final class Superstructure implements Subsystem {
 		m_systemStatePublisher.set(m_state.toString());
 		m_wantedStatePublisher.set(m_stateWanted.toString());
 		m_goalDistancePublisher.set(getDistanceToGoal());
+		m_shotParamPublisher.set(getDesiredShotParams().toString());
 
 		final LocalizationState localizationState = updateLocalization();
 		if (localizationState == LocalizationState.REJECTED_ON_DISTANCE) {
@@ -141,9 +144,10 @@ public final class Superstructure implements Subsystem {
 		// blink for a second after a bad reading
 		if ((Timer.getFPGATimestamp() - m_lastBadTagTime) < 0.1) {
 			m_leds.setLEDS(LEDManager.LEDstate.BAD_TAGS);
-		} else if (DriverStation.isTeleopEnabled()
-			&& getDistanceToGoal() > Constants.MAX_SUGGESTED_RANGE_METERS
-			&& getDistanceToGoal() < Constants.LED_SHUTOFF_RANGE_METERS
+		} else if (DriverStation.isEnabled() &&
+			((getDistanceToGoal() > Constants.MAX_SUGGESTED_RANGE_METERS
+				&& getDistanceToGoal() < Constants.LED_SHUTOFF_RANGE_METERS)
+				|| getDistanceToGoal() < 2.1)
 		) {
 			m_leds.setLEDS(LEDManager.LEDstate.OUT_OF_RANGE);
 		} else {
@@ -207,12 +211,12 @@ public final class Superstructure implements Subsystem {
 			}
 
 			// if the new update is close enough to our estimate
-			if (m_isStrictlyLocalizing || distance < 2.0) {
+			if (m_isStrictlyLocalizing || distance < 5.0) {
 				m_tooFarVisionReadingCount = 0;
 
 				final var headingStd = m_isStrictlyLocalizing ? 0 : 999_999;
 
-				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(1.0, 1.0, headingStd));
+				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(0.3, 0.3, headingStd));
 
 				m_localizationStatePublisher.set(m_isStrictlyLocalizing ? "strictly localized" : "localized");
 				return LocalizationState.LOCALIZED;

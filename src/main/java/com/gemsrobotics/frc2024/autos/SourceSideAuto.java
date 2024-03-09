@@ -10,17 +10,18 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class SourceSideAuto extends SequentialCommandGroup {
+	private static final String AUTO_NAME = "Source 1+0+3 9,2";
 	public SourceSideAuto() {
 		final var drive = Swerve.getInstance();
-		final var driveToFirstShot = drive.getTrackTrajectoryCommand("Source Side.1", true);
-		final var driveToSecondShot = drive.getTrackTrajectoryCommand("Source Side.2", false);
-		final var driveTo3rdShot = drive.getTrackTrajectoryCommand("Source Side.3", false);
-		final var driveTo4thShot = drive.getTrackTrajectoryCommand("Source Side.4", false);
-		final var driveTo5thShot = drive.getTrackTrajectoryCommand("Source Side.5", false);
+		final var driveToFirstShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
+		final var driveToSecondShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
+		final var driveTo3rdShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
+		final var driveTo4thShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
+		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + ".5", false);
 
 		addCommands(
 				driveToFirstShot,
-				new ShootCommand(1.1, true, true),
+				new ShootCommand(1., true, true),
 				new SetIntakeForcedOutCommand(true),
 				new ParallelDeadlineGroup(
 						driveToSecondShot,
@@ -29,14 +30,14 @@ public class SourceSideAuto extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ShootCommand(1.1, true, true),
+				new ShootCommand(1., true, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				driveTo3rdShot,
-				new ShootCommand(1.1, true, true),
+				new ShootCommand(1., true, true),
 				driveTo4thShot,
-				new ShootCommand(1.1, true, true),
+				new ShootCommand(1., true, true),
 				new SetIntakeForcedOutCommand(false),
-				driveTo5thShot
+				driveToMiddle
 		);
 	}
 }

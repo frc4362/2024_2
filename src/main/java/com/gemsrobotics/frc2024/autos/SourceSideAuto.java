@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class SourceSideAuto extends SequentialCommandGroup {
-	private static final String AUTO_NAME = "Source 1+0+3 9,2";
+	private static final String AUTO_NAME = "Source 1+0+3 A";
 	public SourceSideAuto() {
 		final var drive = Swerve.getInstance();
 		final var driveToFirstShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
@@ -21,21 +21,22 @@ public class SourceSideAuto extends SequentialCommandGroup {
 
 		addCommands(
 				driveToFirstShot,
-				new ShootCommand(1., true, true),
+				new ShootCommand(1.3, true, true),
 				new SetIntakeForcedOutCommand(true),
 				new ParallelDeadlineGroup(
 						driveToSecondShot,
 						new SequentialCommandGroup(
-								new WaitCommand(0.25),
+								new WaitCommand(0.1),
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ShootCommand(1., true, true),
+				new ShootCommand(1.3, true, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				driveTo3rdShot,
-				new ShootCommand(1., true, true),
+				new ShootCommand(1.3, true, true),
+				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				driveTo4thShot,
-				new ShootCommand(1., true, true),
+				new ShootCommand(1.3, true, true),
 				new SetIntakeForcedOutCommand(false),
 				driveToMiddle
 		);

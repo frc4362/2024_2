@@ -262,8 +262,8 @@ public final class Shooter implements Subsystem {
 
 	public boolean isReadyToShoot() {
 		return m_periodicIO.state == State.SHOOTING
-				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,3)
-				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,3);
+				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,5)
+				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,5);
 	}
 
 	public void setVelocity(final double rpsLeft, final double rpsRight) {
@@ -274,7 +274,13 @@ public final class Shooter implements Subsystem {
 
 	private static final double SPIN_RATIO = 55.0 / 85.0;
 	public void setCurvedShot(final double fasterSpeedRps) {
-		setVelocity(fasterSpeedRps * SPIN_RATIO, fasterSpeedRps);
+		final var alliance = DriverStation.getAlliance();
+
+		if (alliance.isEmpty() || alliance.get() == DriverStation.Alliance.Red) {
+			setVelocity(fasterSpeedRps * SPIN_RATIO, fasterSpeedRps);
+		} else {
+			setVelocity(fasterSpeedRps, fasterSpeedRps * SPIN_RATIO);
+		}
 	}
 
 	public void setOff() {

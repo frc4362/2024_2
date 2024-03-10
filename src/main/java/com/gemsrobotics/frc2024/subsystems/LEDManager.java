@@ -5,9 +5,11 @@ import java.util.Objects;
 import com.ctre.phoenix.led.*;
 import com.gemsrobotics.frc2024.Constants;
 
+import com.gemsrobotics.frc2024.OI;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -74,6 +76,9 @@ public class LEDManager implements Subsystem {
 			return;
 		}
 
+		OI m_oi = OI.getInstance();
+		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.0); // 0 to 1
+
 		m_statePublisher.set(m_periodicIO.state.toString());
 		switch (m_periodicIO.state) {
 			case IDLE:
@@ -108,5 +113,7 @@ public class LEDManager implements Subsystem {
 	public void playNoteGetAnimation() {
 		m_noteGetTimer.start();
 		m_candle.animate(NOTE_GET_ANIMATION);
+		OI m_oi = OI.getInstance();
+		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.35); // 0 to 1
 	}
 }

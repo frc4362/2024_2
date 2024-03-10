@@ -192,8 +192,6 @@ public class Fintake implements Subsystem {
 		if (m_noteGetTimer.hasElapsed(.5)) {
 			m_noteGetTimer.stop();
 			m_noteGetTimer.reset();
-			OI m_oi = OI.getInstance();
-			m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.0); // 0 to 1
 		}
 
 		m_periodicIO.intakeCurrentDrawAmps = m_intakeDrawAmpsSignal.refresh().getValue();
@@ -241,8 +239,8 @@ public class Fintake implements Subsystem {
 						if (newState == State.HOLDING) {
 							LEDManager.getInstance().playNoteGetAnimation();
 							if (DriverStation.isAutonomous()) {
-								OI m_oi = OI.getInstance();
-								m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.5); // 0 to 1
+//								OI m_oi = OI.getInstance();
+//								m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.5); // 0 to 1
 							}
 							m_periodicIO.lastIntakeTimestamp = Timer.getFPGATimestamp();
 							m_periodicIO.nextReadyToShootTime = m_periodicIO.lastIntakeTimestamp + INTAKE_SHOT_PROTECTION_SECONDS;

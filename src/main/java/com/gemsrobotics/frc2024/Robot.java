@@ -4,26 +4,20 @@
 
 package com.gemsrobotics.frc2024;
 
-import com.ctre.phoenix.led.CANdle;
-import com.ctre.phoenix6.SignalLogger;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
-import com.gemsrobotics.frc2024.autos.FivePieceAuto;
+import com.gemsrobotics.frc2024.autos.AmpSideAuto;
 import com.gemsrobotics.frc2024.autos.SourceSideAuto;
+import com.gemsrobotics.frc2024.autos.TestAuto;
 import com.gemsrobotics.frc2024.subsystems.*;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 public class Robot extends TimedRobot {
 	private static final String NT_KEY = "robot";
@@ -86,8 +80,9 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("5 Piece", new FivePieceAuto());
+		m_chooser.addOption("5 Piece", new AmpSideAuto());
 		m_chooser.addOption("Source Auto", new SourceSideAuto());
+		m_chooser.addOption("Test Auto", new TestAuto());
 //		m_chooser.addOption("Quasi-Forwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
 //		m_chooser.addOption("Quasi-Backwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
 //		m_chooser.addOption("Accel Forwards Char", m_drive.runDriveDynamTest(SysIdRoutine.Direction.kForward));

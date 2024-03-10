@@ -16,7 +16,7 @@ import edu.wpi.first.math.util.Units;
 // https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
 public class SwerveConstantsProd implements SwerveConstants {
     private static final double kKrakenRadiansPerSecond = DCMotor.getKrakenX60(1).freeSpeedRadPerSec;
-    private static final double kWheelRadiusInches = 1.91555; //4.0 / 2.0; // calipered
+    private static final double kWheelRadiusInches = 2;//1.91555; //4.0 / 2.0; // calipered
 
     private static final double kDriveGearRatio = 4.59375;
     private static final double kSteerGearRatio = 13.371428571428572;
@@ -38,7 +38,7 @@ public class SwerveConstantsProd implements SwerveConstants {
         .withKS(0.3) // tuned with controller lol
         // analytic one is 12.0 / (kKrakenRadiansPerSecond / (Math.PI * 2) / kDriveGearRatio) * TRANSMISSION_EFFICIENCY
         .withKV(.55)
-        .withKA(0.09); // used to be .015 ?? maybe this is good i dk lol.
+        .withKA(0.03); // used to be .015 ?? maybe this is good i dk lol.
     // analytically derived kV from motor properties
 
     // The closed-loop output type to use for the steer motors;

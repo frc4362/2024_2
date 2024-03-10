@@ -97,15 +97,15 @@ public class Bender implements Subsystem {
         m_periodicIO.currentDrawBenderAmps = m_currentDrawBender.refresh().getValue();
         m_currentDrawBenderPublisher.set(m_periodicIO.currentDrawBenderAmps);
 
-//        m_bender.setControl(new NeutralOut());
+        m_bender.setControl(new NeutralOut());
 
-        if (m_doSlam) {
-            m_bender.setControl(m_deployedPositionVoltage.withPosition(State.DEPLOYED.rotations));
-        }else if (m_periodicIO.wantedState == State.WIGGLING) {
-            m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations + 3 * Math.sin(3 * Timer.getFPGATimestamp())));
-        } else {
-            m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations));
-        }
+//        if (m_doSlam) {
+//            m_bender.setControl(m_deployedPositionVoltage.withPosition(State.DEPLOYED.rotations));
+//        }else if (m_periodicIO.wantedState == State.WIGGLING) {
+//            m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations + 3 * Math.sin(3 * Timer.getFPGATimestamp())));
+//        } else {
+//            m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations));
+//        }
     }
 
     public void setDoSlam(final boolean doSlammy) {

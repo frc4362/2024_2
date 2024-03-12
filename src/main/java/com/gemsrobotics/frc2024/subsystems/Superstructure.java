@@ -273,13 +273,17 @@ public final class Superstructure implements Subsystem {
 
 	private SystemState handleClimbing() {
 //		m_shooter.setCatchingNote();
-		if (m_shooter.isNoteCaught()) {
-			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
-		} else {
+//		if (m_shooter.isNoteCaught()) {
+//			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
+//		} else {
 //			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
+//		}
+		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+		if (m_stateChangedTimer.get() >= 1) {
+			m_arm.setWantedState(Arm.State.CLIMB_PLACE);
+		} else {
+			m_arm.setWantedState(Arm.State.STOWED);
 		}
-
-		m_arm.setWantedState(Arm.State.CLIMB_PLACE);
 		return applyWantedState();
 	}
 

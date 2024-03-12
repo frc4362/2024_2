@@ -278,7 +278,7 @@ public final class Superstructure implements Subsystem {
 //		} else {
 //			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
 //		}
-		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+		m_fintake.setWantedState(Fintake.WantedState.AMP);
 		if (m_stateChangedTimer.get() >= 1) {
 			m_arm.setWantedState(Arm.State.CLIMB_PLACE);
 		} else {

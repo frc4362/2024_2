@@ -43,6 +43,8 @@ public class Fintake implements Subsystem {
 	public static final double INTAKE_HORIZONTAL_ROTATIONS = 0.0;
 	public static final double INTAKE_DEPLOYED_ROTATIONS = 0.14;
 
+	public static final double INTAKE_AMPING_ROTATIONS = -0.14;
+
 	private static Fintake INSTANCE;
 	public static Fintake getInstance() {
 		if (Objects.isNull(INSTANCE)) {
@@ -58,7 +60,8 @@ public class Fintake implements Subsystem {
 		SHOOTING,
 		EXHAUSTING,
 		INTAKING_AND_SHOOTING,
-		OUT_AND_OFF
+		OUT_AND_OFF,
+		AMP
 	}
 
 	public enum State {
@@ -68,7 +71,8 @@ public class Fintake implements Subsystem {
 		SHOOTING,
 		EXHAUSTING,
 		INTAKING_AND_SHOOTING,
-		OUT_AND_OFF
+		OUT_AND_OFF,
+		AMP
 	}
 
 	public static class PeriodicIO {
@@ -220,7 +224,7 @@ public class Fintake implements Subsystem {
 
 				newState = switch (m_periodicIO.state) {
 					case EMPTY, HOLDING -> m_periodicIO.state;
-					case INTAKING, SHOOTING, EXHAUSTING, INTAKING_AND_SHOOTING, OUT_AND_OFF -> State.EMPTY;
+					case INTAKING, SHOOTING, EXHAUSTING, INTAKING_AND_SHOOTING, OUT_AND_OFF, AMP -> State.EMPTY;
 				};
 
 				break;
@@ -302,6 +306,13 @@ public class Fintake implements Subsystem {
 				m_intakeRequest.Output = 0.0;
 				m_feederVoltsRequest.Output = 0.0;
 				newState = State.OUT_AND_OFF;
+				break;
+
+			case AMP:
+				m_deployerRequest.Position = INTAKE_AMPING_ROTATIONS;
+				m_intakeRequest.Output = 0.0;
+				m_feederVoltsRequest.Output = 0.0;
+				newState = State.AMP;
 				break;
 		}
 

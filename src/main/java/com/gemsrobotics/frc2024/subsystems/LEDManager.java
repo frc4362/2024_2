@@ -78,6 +78,7 @@ public class LEDManager implements Subsystem {
 
 		OI m_oi = OI.getInstance();
 		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.0); // 0 to 1
+		m_oi.getCopilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.0); // 0 to 1
 
 		m_statePublisher.set(m_periodicIO.state.toString());
 		switch (m_periodicIO.state) {
@@ -115,5 +116,6 @@ public class LEDManager implements Subsystem {
 		m_candle.animate(NOTE_GET_ANIMATION);
 		OI m_oi = OI.getInstance();
 		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.35); // 0 to 1
+		m_oi.getCopilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.35); // 0 to 1
 	}
 }

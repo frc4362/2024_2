@@ -50,7 +50,7 @@ public class SwerveConstantsProd implements SwerveConstants {
 
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
-    private static final double kSlipCurrentA = 75.0;
+    private static final double kSlipCurrentA = 100.0;
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot

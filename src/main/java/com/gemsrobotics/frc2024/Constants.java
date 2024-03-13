@@ -44,20 +44,22 @@ public final class Constants {
 	private static final double[][] SHOT_CALS = {
 			// first cal is subwoofer shot
 
-			{1.3, 42.5 + 2.0, 95},
-			{2.22, 24.8 + 2.0, 120.0},
-			{2.45, 23.5 + 2.0, 120.0},
-			{2.71, 20.8 + 2.0, 120.0},
-			{2.97, 18.0 + 2.0, 120.0},
-			{3.52, 14.75 + 2.0, 120.0},
-			{3.95, 13.75 + 2.0, 120.0},
-			{4.25, 12.5 + 2.0, 120.0},
-			{4.53, 11.85 + 2.0, 120.0},
-			{4.8, 11.5 + 2.0, 120.0}
+			{1.3, 42.5, 95},
+			{2.22, 24.8, 120.0},
+			{2.45, 23.5, 120.0},
+			{2.71, 20.8, 120.0},
+			{2.97, 18.0, 120.0},
+			{3.52, 14.75, 120.0},
+			{3.95, 13.75, 120.0},
+			{4.25, 12.5, 120.0},
+			{4.53, 11.85, 120.0},
+			{4.8, 11.5, 120.0}
 	};
 
-	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
-	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
+	private static double SHOT_RAISE_ADJUSTMENT = 0.0;
+
+	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1] + SHOT_RAISE_ADJUSTMENT), SHOT_CALS[0][2]);
+	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1] + SHOT_RAISE_ADJUSTMENT), SHOT_CALS[SHOT_CALS.length - 1][2]);
 
 	private static InterpolatingTreeMap<Double,ShotParam> SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
 	static {
@@ -66,7 +68,7 @@ public final class Constants {
 				continue;
 			}
 
-			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1]), cals[2]));
+			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1] + SHOT_RAISE_ADJUSTMENT), cals[2]));
 		}
 	}
 

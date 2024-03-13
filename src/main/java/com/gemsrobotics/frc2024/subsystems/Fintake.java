@@ -134,7 +134,7 @@ public class Fintake implements Subsystem {
 		feederConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 		feederConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = 0.5;
 		feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-		feederConfig.CurrentLimits.StatorCurrentLimit = 80.0;
+		feederConfig.CurrentLimits.StatorCurrentLimit = 100.0;
 		feederConfig.Feedback.RotorToSensorRatio = 1.0;
 		feederConfig.Feedback.SensorToMechanismRatio = 1.0;
 		feederConfig.Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseClosedLoopSign;
@@ -302,7 +302,7 @@ public class Fintake implements Subsystem {
 				break;
 
 			case OUT_AND_OFF:
-				m_deployerRequest.Position = INTAKE_UNPRESS_ROTATIONS;
+				m_deployerRequest.Position = INTAKE_AMPING_ROTATIONS;
 				m_intakeRequest.Output = 0.0;
 				m_feederVoltsRequest.Output = 0.0;
 				newState = State.OUT_AND_OFF;
@@ -311,7 +311,7 @@ public class Fintake implements Subsystem {
 			case AMP:
 				m_deployerRequest.Position = INTAKE_AMPING_ROTATIONS;
 				m_intakeRequest.Output = 0.0;
-				m_feederVoltsRequest.Output = 0.0;
+				m_feederVoltsRequest.Output = -11.0;
 				newState = State.AMP;
 				break;
 		}

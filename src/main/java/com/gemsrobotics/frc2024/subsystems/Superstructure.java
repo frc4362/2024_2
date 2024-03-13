@@ -29,7 +29,7 @@ public final class Superstructure implements Subsystem {
 	private static final String WANTED_STATE_KEY = "wanted_state";
 	private static final String SYSTEM_STATE_KEY = "system_state";
 	private static final String LOCALIZATION_STATE_KEY = "localization_state";
-	public static final double MAX_SHOOTING_SPEED_METERS_PER_SECOND = 0.25;
+	public static final double MAX_SHOOTING_SPEED_METERS_PER_SECOND = 0.5;
 
 	public enum WantedState {
 		IDLE,
@@ -266,44 +266,36 @@ public final class Superstructure implements Subsystem {
 		m_fintake.setWantedState(Fintake.WantedState.INTAKING);
 		m_bender.setWantedState(Bender.State.STOWED);
 		m_arm.setWantedState(Arm.State.STOWED);
-		m_shooter.setVelocity(-2.5, -2.5);
+
+		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
+			m_shooter.setOff();
+		} else {
+			m_shooter.setVelocity(-2.5, -2.5);
+		}
 //		m_ledManager.setLEDS(LEDstate.OFF);
 		return applyWantedState();
 	}
 
 	private SystemState handleClimbing() {
-//		m_shooter.setCatchingNote();
-//		if (m_shooter.isNoteCaught()) {
-//			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
-//		} else {
-//			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
-//		}
-		m_fintake.setWantedState(Fintake.WantedState.AMP);
-		if (m_stateChangedTimer.get() >= 1) {
+		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+
+		if (m_stateWanted == WantedState.CLIMBING) {
 			m_arm.setWantedState(Arm.State.CLIMB_PLACE);
 		} else {
 			m_arm.setWantedState(Arm.State.STOWED);
 		}
-		return applyWantedState();
+
+		// magic number
+		if (m_arm.getShoulderRotation() > -0.04 && m_stateWanted != WantedState.CLIMBING_2) {
+			return SystemState.CLIMBING;
+		} else {
+			return applyWantedState();
+		}
 	}
 
 	private SystemState handleClimbing_2() {
 		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
 		m_arm.setFinalClimb();
-//		m_arm.setWantedState(Arm.State.CLIMB_PLACE_2);
-//
-//		if (m_ampCanSpit) {
-////			m_shooter.setSpitting();
-//		} else {
-////			m_shooter.setCatchingNote();
-//		}
-//
-//		// TODO? arm ref measurement incorrect?
-//		if (m_stateChangedTimer.get() > 2.0) {
-//			m_bender.setWantedState(Bender.State.DEPLOYED);
-//		} else {
-//			m_bender.setWantedState(Bender.State.STOWED);
-//		}
 
 		return applyWantedState();
 	}
@@ -340,11 +332,7 @@ public final class Superstructure implements Subsystem {
 			m_shooter.setCatchingNote();
 		}
 
-		if (m_stateChangedTimer.get() > 0.5) {
-			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
-		} else {
-			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
-		}
+		m_fintake.setWantedState(Fintake.WantedState.AMP);
 
 		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
 			m_bender.setWantedState(Bender.State.WIGGLING);
@@ -352,8 +340,18 @@ public final class Superstructure implements Subsystem {
 			m_bender.setWantedState(Bender.State.STOWED);
 		}
 
-		m_arm.setWantedState(Arm.State.AMP);
-		return applyWantedState();
+		if (m_stateWanted != WantedState.AMPING) {
+			m_arm.setWantedState(Arm.State.STOWED);
+		} else {
+			m_arm.setWantedState(Arm.State.AMP);
+		}
+
+		// magic number
+		if (m_arm.getShoulderRotation() > -0.04) {
+			return SystemState.AMPING;
+		} else {
+			return applyWantedState();
+		}
 	}
 
 	private boolean isReadyToShoot(final boolean waitForStopRotating) {

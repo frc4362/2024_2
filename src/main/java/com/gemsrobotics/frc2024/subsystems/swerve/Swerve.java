@@ -180,7 +180,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
             driveCurrentLimits.SupplyCurrentLimitEnable = true;
             driveCurrentLimits.SupplyCurrentThreshold = 120;
             driveCurrentLimits.StatorCurrentLimitEnable = true;
-            driveCurrentLimits.StatorCurrentLimit = 75;
+            driveCurrentLimits.StatorCurrentLimit = 100;
             driveTalonFXConfigurator.apply(driveCurrentLimits);
 
             m_voltageSignals.add(module.getDriveMotor().getMotorVoltage());

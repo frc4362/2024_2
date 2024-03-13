@@ -102,7 +102,7 @@ public final class Shooter implements Subsystem {
 
 		m_neutralRequest = new NeutralOut();
 
-		m_doIdling = true;
+		m_doIdling = false;
 
 		//configure the two motors
 		var wheelConfig = new TalonFXConfiguration();
@@ -314,4 +314,19 @@ public final class Shooter implements Subsystem {
 	public void setDoIdling(final boolean newDoIdling) {
 		m_doIdling = newDoIdling;
 	}
+
+//	private boolean wheelsIdledEnough() {
+//		final var alliance = DriverStation.getAlliance();
+//
+//		if (alliance.isEmpty() || alliance.get() == DriverStation.Alliance.Red) {
+//			// right fast
+//			if (m_periodicIO.filteredVelocityLeftRPS > 110) {
+//				return
+//			}
+//			setVelocity(fasterSpeedRps * SPIN_RATIO, fasterSpeedRps);
+//		} else {
+//			// left fast
+//			setVelocity(fasterSpeedRps, fasterSpeedRps * SPIN_RATIO);
+//		}
+//	}
 }

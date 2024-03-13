@@ -80,7 +80,7 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("5 Piece", new AmpSideAuto());
+		m_chooser.addOption("Amp Auto", new AmpSideAuto());
 		m_chooser.addOption("Source Auto", new SourceSideAuto());
 		m_chooser.addOption("Test Auto", new TestAuto());
 //		m_chooser.addOption("Quasi-Forwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kForward));

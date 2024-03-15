@@ -45,6 +45,9 @@ public final class Constants {
 			// first cal is subwoofer shot
 
 			{1.3, 42.5, 95},
+			{1.66, 32.0, 120.0},
+			{1.95, 29.0, 120.0},
+			{2.1, 27.25, 120.0},
 			{2.22, 24.8, 120.0},
 			{2.45, 23.5, 120.0},
 			{2.71, 20.8, 120.0},
@@ -53,7 +56,12 @@ public final class Constants {
 			{3.95, 13.75, 120.0},
 			{4.25, 12.5, 120.0},
 			{4.53, 11.85, 120.0},
-			{4.8, 11.5, 120.0}
+			{4.8, 11.5, 120.0},
+			{4.99, 10.05, 120.0},
+			{5.18, 9.7, 120.0},
+			{5.3, 8.9, 120.0},
+			{5.5, 8.7, 120.0},
+			{5.8, 8.5, 120.0},
 	};
 
 	private static double SHOT_RAISE_ADJUSTMENT = 0.0;
@@ -83,7 +91,7 @@ public final class Constants {
 		}
 	}
 
-	public static final double MAX_SUGGESTED_RANGE_METERS = 4.75;
+	public static final double MAX_SUGGESTED_RANGE_METERS = 5.12;
 	public static final double LED_SHUTOFF_RANGE_METERS = 8.0;
 
 	public static final PIDController SWERVE_TURN_CONTROLLER = new PIDController(5.0, 0, 0);

@@ -3,6 +3,7 @@ package com.gemsrobotics.frc2024.autos;
 import com.gemsrobotics.frc2024.commands.SetIntakeForcedOutCommand;
 import com.gemsrobotics.frc2024.commands.SetWantedStateCommand;
 import com.gemsrobotics.frc2024.commands.ShootCommand;
+import com.gemsrobotics.frc2024.commands.ShootNoteCommand;
 import com.gemsrobotics.frc2024.subsystems.Superstructure;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
@@ -21,7 +22,7 @@ public class SourceSideAuto extends SequentialCommandGroup {
 
 		addCommands(
 				driveToFirstShot,
-				new ShootCommand(1.3, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetIntakeForcedOutCommand(true),
 				new ParallelDeadlineGroup(
 						driveToSecondShot,
@@ -30,13 +31,13 @@ public class SourceSideAuto extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ShootCommand(1.3, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				driveTo3rdShot,
-				new ShootCommand(1.3, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				driveTo4thShot,
-				new ShootCommand(1.3, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetIntakeForcedOutCommand(false),
 				driveToMiddle
 		);

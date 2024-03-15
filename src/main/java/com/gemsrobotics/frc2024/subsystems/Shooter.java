@@ -11,11 +11,9 @@ import com.gemsrobotics.lib.TalonUtils;
 
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.filter.MedianFilter;
-import edu.wpi.first.networktables.BooleanPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
 import java.util.Objects;
@@ -42,7 +40,7 @@ public final class Shooter implements Subsystem {
 	private final PeriodicIO m_periodicIO;
 	private final VelocityVoltage m_velocityRequest;
 	private final PositionVoltage m_positionRequest;
-	private final StrictFollower m_followRequest;
+	private final Follower m_followRequest;
 	private final PositionTorqueCurrentFOC m_spitRequest;
 	private final NeutralOut m_neutralRequest;
 	private final StatusSignal<Double> m_velocityLeftSignal, m_velocityRightSignal;
@@ -54,6 +52,7 @@ public final class Shooter implements Subsystem {
 	private final DoublePublisher m_currentLeftPublisher, m_currentRightPublisher;
 	private final DoublePublisher m_voltageLeftPublisher, m_voltageRightPublisher;
 	private final BooleanPublisher m_noteCaughtPublisher;
+	private final StringPublisher m_statePublisher;
 	private final MedianFilter m_velocityFilterLeft;
 	private final MedianFilter m_velocityFilterRight;
 	private final LinearFilter m_currentFilter;
@@ -95,7 +94,7 @@ public final class Shooter implements Subsystem {
 		m_positionRequest.EnableFOC = true;
 		m_positionRequest.Slot = 1;
 
-		m_followRequest = new StrictFollower(20);
+		m_followRequest = new Follower(m_wheelLeft.getDeviceID(), false);
 
 		m_spitRequest = new PositionTorqueCurrentFOC(0.0); // !!!
 		m_spitRequest.Slot = 2;
@@ -165,13 +164,7 @@ public final class Shooter implements Subsystem {
 		m_voltageLeftPublisher = myTable.getDoubleTopic("voltage_left").publish();
 		m_voltageRightPublisher = myTable.getDoubleTopic("voltage_right").publish();
 		m_noteCaughtPublisher = myTable.getBooleanTopic("note_caught").publish();
-	}
-
-	public enum NoteCatchStates {
-		ACCELERATING,
-		CATCHING,
-		NOTE_FOUND,
-		FEEDING
+		m_statePublisher = myTable.getStringTopic("state").publish();
 	}
 
 	private boolean accelerated = false;
@@ -199,6 +192,7 @@ public final class Shooter implements Subsystem {
 		final double currentNow = m_currentFilter.calculate((m_currentDrawLeft.getValue() + m_currentDrawRight.getValue()) / 2.0);
 
 		m_noteCaughtPublisher.set(m_periodicIO.isNoteCaught);
+		m_statePublisher.set(m_periodicIO.state.toString());
 
 		// write
 		switch (m_periodicIO.state) {
@@ -218,8 +212,6 @@ public final class Shooter implements Subsystem {
 				m_periodicIO.isNoteCaught = false;
 				m_wheelLeft.setControl(m_velocityRequest.withVelocity(m_periodicIO.referenceVelocityLeftRPS));
 				m_wheelRight.setControl(m_velocityRequest.withVelocity(m_periodicIO.referenceVelocityRightRPS));
-//				m_wheelLeft.setControl(new VoltageOut(12.0));
-//				m_wheelRight.setControl(new VoltageOut(12.0));
 				break;
 			case CATCHING_NOTE:
 				if (m_periodicIO.isNoteCaught) {
@@ -229,26 +221,30 @@ public final class Shooter implements Subsystem {
 					m_wheelLeft.setControl(m_velocityRequest.withVelocity(5));
 					m_wheelRight.setControl(m_velocityRequest.withVelocity(5));
 
-					if (currentNow < 25 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
+					if (currentNow < 12 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
 						accelerated = true;
 					}
 
-					if (currentNow > 35 && accelerated) {
+					if ((currentNow > 20 && accelerated) || currentNow > 35.0) {
 						m_periodicIO.isNoteCaught = true;
-						m_periodicIO.catchNoteGoal = m_positionLeft.refresh().getValue() + 0.6; // plus 1.5 rotations = 9 inches of motion
+						m_periodicIO.catchNoteGoal = m_positionLeft.refresh().getValue() + 0.75; // plus 1.5 rotations = 9 inches of motion
 					}
 				}
 
 				break;
 			case SPITTING_NOTE:
-				m_wheelLeft.setControl(m_spitRequest);
-				m_wheelRight.setControl(m_followRequest);
+				m_wheelLeft.setControl(m_velocityRequest.withVelocity(10));
+				m_wheelRight.setControl(m_velocityRequest.withVelocity(10));
 				break;
 		}
 	}
 
 	public double getMeasuredSpeed() {
 		return m_periodicIO.filteredVelocityLeftRPS;
+	}
+
+	public double getMeasuredCurrentDraw() {
+		return m_currentDrawLeft.getValue();
 	}
 
 	public boolean isNoteCaught() {
@@ -262,8 +258,8 @@ public final class Shooter implements Subsystem {
 
 	public boolean isReadyToShoot() {
 		return m_periodicIO.state == State.SHOOTING
-				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,5)
-				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,5);
+				&& isNear(m_periodicIO.referenceVelocityLeftRPS, m_periodicIO.filteredVelocityLeftRPS,3)
+				&& isNear(m_periodicIO.referenceVelocityRightRPS, m_periodicIO.filteredVelocityRightRPS,3);
 	}
 
 	public void setVelocity(final double rpsLeft, final double rpsRight) {
@@ -298,7 +294,7 @@ public final class Shooter implements Subsystem {
 	public void setSpitting() {
 		if (m_periodicIO.state != State.SPITTING_NOTE) {
 			m_periodicIO.state = State.SPITTING_NOTE;
-			m_spitRequest.Position = m_positionLeft.refresh().getValue() + 5.0;
+			m_spitRequest.Position = m_positionLeft.refresh().getValue() + 10.0;
 		}
 	}
 
@@ -314,19 +310,4 @@ public final class Shooter implements Subsystem {
 	public void setDoIdling(final boolean newDoIdling) {
 		m_doIdling = newDoIdling;
 	}
-
-//	private boolean wheelsIdledEnough() {
-//		final var alliance = DriverStation.getAlliance();
-//
-//		if (alliance.isEmpty() || alliance.get() == DriverStation.Alliance.Red) {
-//			// right fast
-//			if (m_periodicIO.filteredVelocityLeftRPS > 110) {
-//				return
-//			}
-//			setVelocity(fasterSpeedRps * SPIN_RATIO, fasterSpeedRps);
-//		} else {
-//			// left fast
-//			setVelocity(fasterSpeedRps, fasterSpeedRps * SPIN_RATIO);
-//		}
-//	}
 }

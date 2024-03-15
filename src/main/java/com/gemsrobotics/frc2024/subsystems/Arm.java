@@ -71,7 +71,7 @@ public final class Arm implements Subsystem {
     public enum State {
         STOWED(SHOULDER_MIN, ELBOW_MIN),
 //        AMP(0.099, 0.156),
-        AMP(0.075, 0.135),
+        AMP(0.0765, 0.14),
 //        AMP(0.126, 0.095),
         CLIMB_PLACE(1.65, 0.0),
 //        CLIMB_PLACE_2(1.65, 0.34),

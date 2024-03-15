@@ -16,7 +16,7 @@ public class ShootCommand extends SequentialCommandGroup {
 								new WaitCommand(duration)
 						),
 						new RunCommand(() -> Swerve.getInstance().setAimingAtGoal(new Translation2d()))
-								.until(() -> Swerve.getInstance().getAimingError().getDegrees() < 1.5).onlyIf(() -> doAutoAim)
+								.until(() -> Swerve.getInstance().getAimingError().getDegrees() < 1.0).onlyIf(() -> doAutoAim)
 				).withTimeout(duration).andThen(new SetWantedStateCommand(Superstructure.WantedState.IDLE).onlyIf(() -> stopShooting))
 		);
 	}

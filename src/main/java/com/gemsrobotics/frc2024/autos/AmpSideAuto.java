@@ -3,6 +3,7 @@ package com.gemsrobotics.frc2024.autos;
 import com.gemsrobotics.frc2024.commands.SetIntakeForcedOutCommand;
 import com.gemsrobotics.frc2024.commands.SetWantedStateCommand;
 import com.gemsrobotics.frc2024.commands.ShootCommand;
+import com.gemsrobotics.frc2024.commands.ShootNoteCommand;
 import com.gemsrobotics.frc2024.subsystems.Shooter;
 import com.gemsrobotics.frc2024.subsystems.Superstructure;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
@@ -22,10 +23,10 @@ public class AmpSideAuto extends SequentialCommandGroup {
 		addCommands(
 				new SetIntakeForcedOutCommand(true),
 				pathToFirstShootLocation,
-				new ShootCommand(1.0, false, true),
+				new ShootNoteCommand(5.0, false),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(true)),
 				pathToSecondShootLocation,
-				new ShootCommand(0.5, true, true),
+				new ShootCommand(0.5, true, false),
 				new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
@@ -36,13 +37,13 @@ public class AmpSideAuto extends SequentialCommandGroup {
 								new InstantCommand(() -> Shooter.getInstance().setDoIdling(false))
 						)
 				).andThen(new InstantCommand(() -> Shooter.getInstance().setDoIdling(false))),
-				new ShootCommand(1.25, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				pathToFourthShootLocation,
-				new ShootCommand(1.25, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				pathToFifthShootLocation,
-				new ShootCommand(1.25, true, true),
+				new ShootNoteCommand(2.0, true),
 				new SetIntakeForcedOutCommand(false)
 		);
 	}

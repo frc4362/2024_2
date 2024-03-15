@@ -7,6 +7,7 @@ package com.gemsrobotics.frc2024;
 import com.gemsrobotics.frc2024.autos.AmpSideAuto;
 import com.gemsrobotics.frc2024.autos.SourceSideAuto;
 import com.gemsrobotics.frc2024.autos.TestAuto;
+import com.gemsrobotics.frc2024.commands.ShootNoteCommand;
 import com.gemsrobotics.frc2024.subsystems.*;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -80,14 +81,16 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("Amp Auto", new AmpSideAuto());
-		m_chooser.addOption("Source Auto", new SourceSideAuto());
-		m_chooser.addOption("Test Auto", new TestAuto());
+		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
+		m_chooser.addOption("Source-Side Auto", new SourceSideAuto());
+		m_chooser.addOption("Shoot Note", new ShootNoteCommand(5.0, true));
 //		m_chooser.addOption("Quasi-Forwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
 //		m_chooser.addOption("Quasi-Backwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
 //		m_chooser.addOption("Accel Forwards Char", m_drive.runDriveDynamTest(SysIdRoutine.Direction.kForward));
 //		m_chooser.addOption("Accel Backwards Char", m_drive.runDriveDynamTest(SysIdRoutine.Direction.kReverse));
 		SmartDashboard.putData("Auto Chooser", m_chooser);
+
+		SmartDashboard.putData("Scheduler", CommandScheduler.getInstance());
 
 		// heh heh
 		m_drive.getDaqThread().setThreadPriority(99);
@@ -102,7 +105,6 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotPeriodic() {
 		CommandScheduler.getInstance().run();
-
 		SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
 	}
 
@@ -174,11 +176,11 @@ public class Robot extends TimedRobot {
 			wantsClimb2 = !wantsClimb2;
 		}
 
-//		if () {
-//			m_fintake.setIntakeReset();
-//		}
-//
-//		m_fintake.setStallIntakeBack(m_oi.getCopilot().getYButton());
+		if (m_oi.getCopilot().getYButtonReleased()) {
+			m_fintake.setIntakeReset();
+		}
+
+		m_fintake.setStallIntakeBack(m_oi.getCopilot().getYButton());
 
 		if (wantsAmp) {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);

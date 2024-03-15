@@ -16,7 +16,7 @@ import edu.wpi.first.math.util.Units;
 // https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
 public class SwerveConstantsProd implements SwerveConstants {
     private static final double kKrakenRadiansPerSecond = DCMotor.getKrakenX60(1).freeSpeedRadPerSec;
-    private static final double kWheelRadiusInches = 2;//1.91555; //4.0 / 2.0; // calipered
+    private static final double kWheelRadiusInches = 1.96;//1.91555; //4.0 / 2.0; // calipered
 
     private static final double kDriveGearRatio = 4.59375;
     private static final double kSteerGearRatio = 13.371428571428572;
@@ -35,10 +35,10 @@ public class SwerveConstantsProd implements SwerveConstants {
     // output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
     private static final Slot0Configs driveGains = new Slot0Configs()
         .withKP(3.0).withKI(0).withKD(0)
-        .withKS(0.3) // tuned with controller lol
+        .withKS(0.5) // tuned with controller lol
         // analytic one is 12.0 / (kKrakenRadiansPerSecond / (Math.PI * 2) / kDriveGearRatio) * TRANSMISSION_EFFICIENCY
-        .withKV(.55)
-        .withKA(0.03); // used to be .015 ?? maybe this is good i dk lol.
+        .withKV(0.55) // maybe 0.63
+        .withKA(0.3); // used to be .015 ?? maybe this is good i dk lol.
     // analytically derived kV from motor properties
 
     // The closed-loop output type to use for the steer motors;
@@ -50,7 +50,7 @@ public class SwerveConstantsProd implements SwerveConstants {
 
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
-    private static final double kSlipCurrentA = 100.0;
+    private static final double kSlipCurrentA = 90.0;
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
@@ -59,7 +59,7 @@ public class SwerveConstantsProd implements SwerveConstants {
     // Theoretical free speed (m/s) at 12v applied output;
     // This needs to be tuned to your individual robot
 //    public static final double kSpeedAt12VoltsMps = 7.145; // analytically derived below
-    public static final double kSpeedAt12VoltsMps = kKrakenRadiansPerSecond / kDriveGearRatio * Units.inchesToMeters(kWheelRadiusInches);
+    public static final double kSpeedAt12VoltsMps = 6.6;//kKrakenRadiansPerSecond / kDriveGearRatio * Units.inchesToMeters(kWheelRadiusInches);
 
     private static final boolean kSteerMotorReversed = true;
     private static final boolean kInvertLeftSide = false;

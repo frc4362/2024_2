@@ -67,6 +67,8 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         return INSTANCE;
     }
 
+    private static final Translation2d FAR_AIM_ADJUSTMENT = new Translation2d(0.0, Units.inches2Meters(-6.0));
+
     // open loop constants
     private static final Rotation2d FLIP_ANGLE = Rotation2d.fromDegrees(180);
     private static final double DEADBAND = 0.15;
@@ -123,7 +125,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
 
         // config driving while aiming request
         m_aimingRequest = new SwerveRequest.FieldCentricFacingAngle();
-        m_aimingRequest.HeadingController = new PhoenixPIDController(12, 0.0, 0.35);
+        m_aimingRequest.HeadingController = new PhoenixPIDController(12, 0.0, 0.7);
         m_aimingRequest.DriveRequestType = SwerveModule.DriveRequestType.OpenLoopVoltage;
         m_aimingRequest.SteerRequestType = SwerveModule.SteerRequestType.MotionMagic;
         m_aimingRequest.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
@@ -180,7 +182,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
             driveCurrentLimits.SupplyCurrentLimitEnable = true;
             driveCurrentLimits.SupplyCurrentThreshold = 120;
             driveCurrentLimits.StatorCurrentLimitEnable = true;
-            driveCurrentLimits.StatorCurrentLimit = 100;
+            driveCurrentLimits.StatorCurrentLimit = 90;
             driveTalonFXConfigurator.apply(driveCurrentLimits);
 
             m_voltageSignals.add(module.getDriveMotor().getMotorVoltage());
@@ -356,8 +358,17 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         setControl(m_brakeRequest);
     }
 
+    private Translation2d getAimingTarget() {
+        var speakerLocation = m_allianceConstants.getSpeakerLocationMeters();
+        if (getState().Pose.getTranslation().getDistance(speakerLocation) > 5.0) {
+            speakerLocation = speakerLocation.plus(FAR_AIM_ADJUSTMENT);
+        }
+
+        return speakerLocation;
+    }
+
     private Rotation2d getAngleToSpeaker() {
-        return getState().Pose.getTranslation().minus(m_allianceConstants.getSpeakerLocationMeters()).getAngle();
+        return getState().Pose.getTranslation().minus(getAimingTarget()).getAngle();
     }
 
     private boolean shouldFlipState() {

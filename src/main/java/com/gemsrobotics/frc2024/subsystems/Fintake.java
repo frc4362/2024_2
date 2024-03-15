@@ -337,7 +337,11 @@ public class Fintake implements Subsystem {
 			m_deployerRequest.Position = INTAKE_DEPLOYED_ROTATIONS;
 		}
 
-		m_deployer.setControl(m_deployerRequest);
+		if (m_stallIntakeBack) {
+			m_deployer.setControl(new VoltageOut(-2.0));
+		} else {
+			m_deployer.setControl(m_deployerRequest);
+		}
 
 		setState(newState);
 	}
@@ -346,21 +350,21 @@ public class Fintake implements Subsystem {
 		return m_periodicIO.state == State.HOLDING;
 	}
 
-//	public void setIntakeReset() {
-//		m_deployer.setPosition(INTAKE_STARTING_ROTATIONS);
-//	}
-//
-//	private boolean m_stallIntakeBack = false;
-//	public void setStallIntakeBack(final boolean s) {
-//		m_stallIntakeBack = s;
-//	}
+	public void setIntakeReset() {
+		m_deployer.setPosition(INTAKE_STARTING_ROTATIONS - 0.01);
+	}
+
+	private boolean m_stallIntakeBack = false;
+	public void setStallIntakeBack(final boolean s) {
+		m_stallIntakeBack = s;
+	}
 
 	public void clearPiece() {
 		setState(State.EMPTY);
 	}
 
 	public boolean isFeederStalled() {
-		return m_periodicIO.feederCurrentDrawAmps < -35.0;
+		return m_periodicIO.feederCurrentDrawAmps < -39.0;
 	}
 
 	public void setWantedState(final WantedState state) {

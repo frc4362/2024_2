@@ -10,6 +10,7 @@ import com.gemsrobotics.lib.data.Pose2dRollingAverage;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -91,6 +92,7 @@ public final class Superstructure implements Subsystem {
 	private double m_lastBadTagTime;
 	private int m_tooFarVisionReadingCount;
 	private ShotLogger m_logger;
+	private PeriodicIO m_periodicIO;
 	
 	private Superstructure() {
 		m_arm = Arm.getInstance();
@@ -102,6 +104,7 @@ public final class Superstructure implements Subsystem {
 		m_fintake = Fintake.getInstance();
 		m_simpleTargetServer = SimpleTargetServer.getInstance();
 		m_logger = new ShotLogger();
+		m_periodicIO = new PeriodicIO();
 
 		m_stateChanged = true;
 		m_isStrictlyLocalizing = true;
@@ -128,12 +131,21 @@ public final class Superstructure implements Subsystem {
 		m_stateWanted = WantedState.IDLE;
 	}
 
+	public static class PeriodicIO {
+		public Pose2d fieldToVehicle = new Pose2d();
+		public double turnRate = 0.0;
+	}
+
 	@Override
 	public void periodic() {
+		m_periodicIO.fieldToVehicle = m_drive.getState().Pose;
+		m_periodicIO.turnRate = m_drive.getPigeon2().getRate();
+
 		// telemetry
 		m_systemStatePublisher.set(m_state.toString());
 		m_wantedStatePublisher.set(m_stateWanted.toString());
-		m_goalDistancePublisher.set(getDistanceToGoal());
+		double distanceToGoal = getDistanceToGoal();
+		m_goalDistancePublisher.set(distanceToGoal);
 		m_shotParamPublisher.set(getDesiredShotParams().toString());
 
 		final LocalizationState localizationState = updateLocalization();
@@ -145,9 +157,9 @@ public final class Superstructure implements Subsystem {
 		if ((Timer.getFPGATimestamp() - m_lastBadTagTime) < 0.1) {
 			m_leds.setLEDS(LEDManager.LEDstate.BAD_TAGS);
 		} else if (DriverStation.isEnabled() &&
-			((getDistanceToGoal() > Constants.MAX_SUGGESTED_RANGE_METERS
-				&& getDistanceToGoal() < Constants.LED_SHUTOFF_RANGE_METERS)
-				|| getDistanceToGoal() < 2.1)
+			((distanceToGoal > Constants.MAX_SUGGESTED_RANGE_METERS
+				&& distanceToGoal < Constants.LED_SHUTOFF_RANGE_METERS)
+				|| distanceToGoal < 2.1)
 		) {
 			m_leds.setLEDS(LEDManager.LEDstate.OUT_OF_RANGE);
 		} else {
@@ -203,9 +215,9 @@ public final class Superstructure implements Subsystem {
 			final var update = visionUpdate.get();
 			final var newPose = update.pose;
 
-			final var distance = newPose.getTranslation().getDistance(m_drive.getState().Pose.getTranslation());
+			final var distance = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
 
-			if (Math.abs(Math.toRadians(m_drive.getPigeon2().getRate())) > 1.0) {
+			if (Math.abs(Math.toRadians(m_periodicIO.turnRate)) > 2.0) {
 				m_localizationStatePublisher.set("turning too fast");
 				return LocalizationState.TURNING_TOO_FAST;
 			}
@@ -214,7 +226,7 @@ public final class Superstructure implements Subsystem {
 			if (m_isStrictlyLocalizing || distance < 5.0) {
 				m_tooFarVisionReadingCount = 0;
 
-				final var headingStd = m_isStrictlyLocalizing ? 0 : 999_999;
+				final var headingStd = m_isStrictlyLocalizing ? 0 : 9_999_999;
 
 				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(0.3, 0.3, headingStd));
 
@@ -332,7 +344,11 @@ public final class Superstructure implements Subsystem {
 			m_shooter.setCatchingNote();
 		}
 
-		m_fintake.setWantedState(Fintake.WantedState.AMP);
+		if (m_stateChangedTimer.get() > 1.0) {
+			m_fintake.setWantedState(Fintake.WantedState.AMP);
+		} else {
+			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+		}
 
 		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
 			m_bender.setWantedState(Bender.State.WIGGLING);
@@ -354,10 +370,10 @@ public final class Superstructure implements Subsystem {
 		}
 	}
 
-	private boolean isReadyToShoot(final boolean waitForStopRotating) {
+	public boolean isReadyToShoot(final boolean waitForStopRotating) {
 		final boolean stopped = m_drive.getObserver().getMeasuredVelocity().getNorm() < MAX_SHOOTING_SPEED_METERS_PER_SECOND;
 		final boolean shooterAtSpeed = m_shooter.isReadyToShoot();
-		final boolean turningFast = !waitForStopRotating || Math.abs(m_drive.getPigeon2().getRate()) < 1;
+		final boolean turningFast = !waitForStopRotating || Math.abs(Math.toRadians(m_periodicIO.turnRate)) < 1;
 		final boolean armElevationCorrect = m_arm.atReference(getDesiredShotParams());
 
 		final List<String> reasons = new ArrayList<>();
@@ -384,9 +400,7 @@ public final class Superstructure implements Subsystem {
 	}
 
 	private double getDistanceToGoal() {
-		return m_allianceConstants.getSpeakerLocationMeters().getDistance(m_drive.getState().Pose.getTranslation());
-//		final var cameraToTarget = m_simpleTargetServer.getCameraToTarget();
-//		return cameraToTarget.map(measure -> measure.getTranslation().getNorm()).orElse(0.0);
+		return m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
 	}
 
 	private static final PIDController TARGET_PID = new PIDController(0.3, 0.0, 0.2);

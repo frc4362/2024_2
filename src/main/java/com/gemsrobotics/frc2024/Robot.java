@@ -4,10 +4,7 @@
 
 package com.gemsrobotics.frc2024;
 
-import com.gemsrobotics.frc2024.autos.AmpSideAuto;
-import com.gemsrobotics.frc2024.autos.SourceSideAuto;
-import com.gemsrobotics.frc2024.autos.TestAuto;
-import com.gemsrobotics.frc2024.commands.ShootNoteCommand;
+import com.gemsrobotics.frc2024.autos.*;
 import com.gemsrobotics.frc2024.subsystems.*;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -82,8 +79,12 @@ public class Robot extends TimedRobot {
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
 		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
-		m_chooser.addOption("Source-Side Auto", new SourceSideAuto());
-		m_chooser.addOption("Shoot Note", new ShootNoteCommand(5.0, true));
+		m_chooser.addOption("Source-Side Auto 2 First", new SourceSideAuto2First());
+		m_chooser.addOption("Source-Side Auto 1 First", new SourceSideAuto1First());
+		m_chooser.addOption("SAFE AMP AUTO", new SafeAmpSideAuto());
+		m_chooser.addOption("Safe Auto", new SafeAuto());
+		m_chooser.addOption("Trespass Auto", new TrespassAuto());
+//		m_chooser.addOption("Shoot Note", new ShootNoteCommand(5.0, true));
 //		m_chooser.addOption("Quasi-Forwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
 //		m_chooser.addOption("Quasi-Backwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
 //		m_chooser.addOption("Accel Forwards Char", m_drive.runDriveDynamTest(SysIdRoutine.Direction.kForward));
@@ -106,6 +107,7 @@ public class Robot extends TimedRobot {
 	public void robotPeriodic() {
 		CommandScheduler.getInstance().run();
 		SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
+		SmartDashboard.putBoolean("holding note", m_fintake.isHoldingPiece());
 	}
 
 	@Override
@@ -121,6 +123,15 @@ public class Robot extends TimedRobot {
 		m_superstructure.setWantsIntaking(false);
 		m_superstructure.setFeedingAllowed(true);
 		m_fintake.setForcedOut(false);
+
+		// dont ask....
+		// flush controls
+		m_oi.getPilot().getYButtonPressed();
+		m_oi.getPilot().getBButtonPressed();
+		m_oi.getPilot().getStartButtonPressed();
+		m_oi.getCopilot().getLeftBumperPressed();
+		m_oi.getCopilot().getRightBumperPressed();
+		m_oi.getCopilot().getYButtonReleased();
 	}
 
 	private boolean wantsClimb1 = false, wantsClimb2 = false;
@@ -165,7 +176,14 @@ public class Robot extends TimedRobot {
 					m_oi.getWantsEvasion());
 		}
 
-		Bender.getInstance().setDoSlam(m_oi.getCopilot().getLeftBumper());
+		if (m_oi.getCopilot().getLeftBumperPressed()) {
+			Constants.adjustShots(0.5);
+		} else if (m_oi.getCopilot().getRightBumperPressed()) {
+			Constants.adjustShots(-0.5);
+		}
+
+		Bender.getInstance().setDoSlam(m_oi.getCopilot().getAButton());
+		Bender.getInstance().setDoRelease(m_oi.getCopilot().getBButton());
 
 		// toggles for climb
 		if (m_oi.getPilot().getYButtonPressed()) {
@@ -186,7 +204,7 @@ public class Robot extends TimedRobot {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);
 		} else if (wantsClimb2) {
 			m_superstructure.setWantedState(Superstructure.WantedState.CLIMBING_2);
-			m_climber.setVoltsProtected(12 * m_oi.getCopilot().getLeftTriggerAxis());
+			m_climber.setVoltsProtected(10 * m_oi.getCopilot().getLeftTriggerAxis());
 		} else if (wantsClimb1) {
 			m_superstructure.setWantedState(Superstructure.WantedState.CLIMBING);
 			m_climber.setVolts(0.0);

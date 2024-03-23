@@ -236,16 +236,18 @@ public class Fintake implements Subsystem {
 						//if we want to intake and we are already intaking, keep at it.
 						//if DO_STOPPING is true, then when the feeder is stalled set the state to HOLDING
 						m_deployerRequest.Position = INTAKE_DEPLOYED_ROTATIONS;
-						m_intakeRequest.Output = (DriverStation.isAutonomous() ? 10.0 : 8.0) / 12.0;
+
+						if (m_periodicIO.deployerPosition > 0.0) {
+							m_intakeRequest.Output = 10.0 / 12.0;
+						} else {
+							m_intakeRequest.Output = 0.0;
+						}
+
 						m_feederVoltsRequest.Output = -7.0;
 						newState = DO_STOPPING && isFeederStalled() ? State.HOLDING : State.INTAKING;
 
 						if (newState == State.HOLDING) {
 							LEDManager.getInstance().playNoteGetAnimation();
-							if (DriverStation.isAutonomous()) {
-//								OI m_oi = OI.getInstance();
-//								m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.5); // 0 to 1
-							}
 							m_periodicIO.lastIntakeTimestamp = Timer.getFPGATimestamp();
 							m_periodicIO.nextReadyToShootTime = m_periodicIO.lastIntakeTimestamp + INTAKE_SHOT_PROTECTION_SECONDS;
 							m_periodicIO.hasBackedOut = false;
@@ -364,7 +366,7 @@ public class Fintake implements Subsystem {
 	}
 
 	public boolean isFeederStalled() {
-		return m_periodicIO.feederCurrentDrawAmps < -39.0;
+		return m_periodicIO.feederCurrentDrawAmps < -35.0;
 	}
 
 	public void setWantedState(final WantedState state) {

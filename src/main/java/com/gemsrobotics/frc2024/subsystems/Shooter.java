@@ -221,14 +221,14 @@ public final class Shooter implements Subsystem {
 					m_wheelLeft.setControl(m_velocityRequest.withVelocity(5));
 					m_wheelRight.setControl(m_velocityRequest.withVelocity(5));
 
-					if (currentNow < 12 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
-						accelerated = true;
-					}
-
-					if ((currentNow > 20 && accelerated) || currentNow > 35.0) {
-						m_periodicIO.isNoteCaught = true;
-						m_periodicIO.catchNoteGoal = m_positionLeft.refresh().getValue() + 0.75; // plus 1.5 rotations = 9 inches of motion
-					}
+//					if (currentNow < 12 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
+//						accelerated = true;
+//					}
+//
+//					if ((currentNow > 20 && accelerated) || currentNow > 45.0) {
+//						m_periodicIO.isNoteCaught = true;
+//						m_periodicIO.catchNoteGoal = m_positionLeft.refresh().getValue() + 1.0; // plus 1.5 rotations = 9 inches of motion
+//					}
 				}
 
 				break;

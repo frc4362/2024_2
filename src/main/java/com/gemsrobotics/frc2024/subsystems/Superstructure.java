@@ -157,11 +157,12 @@ public final class Superstructure implements Subsystem {
 		if ((Timer.getFPGATimestamp() - m_lastBadTagTime) < 0.1) {
 			m_leds.setLEDS(LEDManager.LEDstate.BAD_TAGS);
 		} else if (DriverStation.isEnabled() &&
-			((distanceToGoal > Constants.MAX_SUGGESTED_RANGE_METERS
+			(distanceToGoal > Constants.MAX_SUGGESTED_RANGE_METERS
 				&& distanceToGoal < Constants.LED_SHUTOFF_RANGE_METERS)
-				|| distanceToGoal < 2.1)
 		) {
 			m_leds.setLEDS(LEDManager.LEDstate.OUT_OF_RANGE);
+		} else if (localizationState == LocalizationState.LOCALIZED && m_isStrictlyLocalizing) {
+			m_leds.setLEDS(LEDManager.LEDstate.IN_RANGE);
 		} else {
 			m_leds.setLEDS(LEDManager.LEDstate.IDLE);
 		}
@@ -223,7 +224,7 @@ public final class Superstructure implements Subsystem {
 			}
 
 			// if the new update is close enough to our estimate
-			if (m_isStrictlyLocalizing || distance < 5.0) {
+			if (m_isStrictlyLocalizing || true) {
 				m_tooFarVisionReadingCount = 0;
 
 				final var headingStd = m_isStrictlyLocalizing ? 0 : 9_999_999;
@@ -243,6 +244,7 @@ public final class Superstructure implements Subsystem {
 		}
 	}
 
+	private static final boolean DO_SHOT_PROTECTION = true;
 	private boolean m_hasLoggedShot = true;
 	private SystemState handleShooting() {
 		if (m_stateChanged) {
@@ -252,7 +254,13 @@ public final class Superstructure implements Subsystem {
 		m_bender.setWantedState(Bender.State.STOWED);
 
 		final var params = getDesiredShotParams();
-		conformToShooterState(params);
+		if (DO_SHOT_PROTECTION && !m_wantsIntaking) {
+			if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
+				conformToShooterState(params);
+			}
+		} else {
+			conformToShooterState(params);
+		}
 
 		if (m_wantsIntaking) {
 			m_fintake.setWantedState(Fintake.WantedState.INTAKING_AND_SHOOTING);
@@ -337,28 +345,32 @@ public final class Superstructure implements Subsystem {
 			m_hasTriedToSpit = false;
 		}
 
-		if (m_ampCanSpit || m_hasTriedToSpit) {
-			m_shooter.setSpitting();
-			m_hasTriedToSpit = true;
-		} else {
+//		if (m_ampCanSpit || m_hasTriedToSpit) {
+//			m_shooter.setSpitting();
+//			m_hasTriedToSpit = true;
+//		} else {
+
+		if (m_stateChangedTimer.get() > 0.25) {
 			m_shooter.setCatchingNote();
 		}
 
-		if (m_stateChangedTimer.get() > 1.0) {
+//		if (m_stateChangedTimer.get() > 1.0) {
 			m_fintake.setWantedState(Fintake.WantedState.AMP);
-		} else {
-			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-		}
+//		} else {
+//			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+//		}
 
 		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
-			m_bender.setWantedState(Bender.State.WIGGLING);
+			m_bender.setWantedState(Bender.State.STOWED);
+//			m_bender.setWantedState(Bender.State.WIGGLING);
 		} else {
 			m_bender.setWantedState(Bender.State.STOWED);
 		}
 
 		if (m_stateWanted != WantedState.AMPING) {
 			m_arm.setWantedState(Arm.State.STOWED);
-		} else {
+			m_bender.setWantedState(Bender.State.STOWED);
+		} else if (m_stateChangedTimer.get() > 0.25) {
 			m_arm.setWantedState(Arm.State.AMP);
 		}
 

@@ -93,7 +93,7 @@ public class LEDManager implements Subsystem {
 				m_candle.setLEDs(255 / 3,255 / 3,0);
 				break;
 			case IN_RANGE:
-				m_candle.setLEDs(0, 255, 125);
+				m_candle.setLEDs(0, 255 / 5, 125 / 5);
 				break;
 			case BAD_TAGS:
 				m_candle.setLEDs(0x8f, 0x00, 0xFF);
@@ -115,7 +115,7 @@ public class LEDManager implements Subsystem {
 		m_noteGetTimer.start();
 		m_candle.animate(NOTE_GET_ANIMATION);
 		OI m_oi = OI.getInstance();
-		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.35); // 0 to 1
-		m_oi.getCopilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.35); // 0 to 1
+		m_oi.getPilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.55); // 0 to 1
+		m_oi.getCopilot().setRumble(GenericHID.RumbleType.kBothRumble, 0.55); // 0 to 1
 	}
 }

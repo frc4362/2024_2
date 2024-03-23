@@ -20,7 +20,7 @@ public class ShootNoteCommand extends SequentialCommandGroup {
 												new InstantCommand(() -> Superstructure.getInstance().setFeedingAllowed(true)),
 												new WaitUntilCommand(() -> Superstructure.getInstance().isReadyToShoot(true)),
 												new WaitUntilCommand(() -> Shooter.getInstance().getMeasuredCurrentDraw() > 40.0),
-												new WaitCommand(0.25)
+												new WaitCommand(0.45)
 										),
 										new RunCommand(() -> Swerve.getInstance().setAimingAtGoal(new Translation2d()))
 								)

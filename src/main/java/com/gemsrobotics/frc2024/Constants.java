@@ -55,8 +55,8 @@ public final class Constants {
 			{3.52, 14.75, 120.0},
 			{3.95, 13.75, 120.0},
 			{4.25, 12.5, 120.0},
-			{4.53, 11.85, 120.0},
-			{4.8, 11.5, 120.0},
+			{4.53, 11.1, 120.0},
+			{4.8, 10.3, 120.0},
 			{4.99, 10.05, 120.0},
 			{5.18, 9.7, 120.0},
 			{5.3, 8.9, 120.0},
@@ -64,10 +64,10 @@ public final class Constants {
 			{5.8, 8.5, 120.0},
 	};
 
-	private static double SHOT_RAISE_ADJUSTMENT = 0.0;
+	private static double SHOT_RAISE_ADJUSTMENT = 2.0;
 
-	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1] + SHOT_RAISE_ADJUSTMENT), SHOT_CALS[0][2]);
-	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1] + SHOT_RAISE_ADJUSTMENT), SHOT_CALS[SHOT_CALS.length - 1][2]);
+	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
+	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
 
 	private static InterpolatingTreeMap<Double,ShotParam> SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
 	static {
@@ -76,22 +76,30 @@ public final class Constants {
 				continue;
 			}
 
-			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1] + SHOT_RAISE_ADJUSTMENT), cals[2]));
+			SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1]), cals[2]));
 		}
 	}
 
 	public static ShotParam getShotParameters(final double distanceMeters) {
+		ShotParam ret;
+
 		// first cal is subwoofer shot
 		if (distanceMeters < SHOT_CALS[1][0]) {
-			return MIN_SHOT;
+			ret = MIN_SHOT;
 		} else if (distanceMeters > SHOT_CALS[SHOT_CALS.length - 1][0]) {
-			return MAX_SHOT;
+			ret = MAX_SHOT;
 		} else {
-			return SHOT_PARAMETERS.get(distanceMeters);
+			ret = SHOT_PARAMETERS.get(distanceMeters);
 		}
+
+		return new ShotParam(ret.getAngle().plus(Rotation2d.fromDegrees(SHOT_RAISE_ADJUSTMENT)), ret.getVelocityRps());
 	}
 
-	public static final double MAX_SUGGESTED_RANGE_METERS = 5.12;
+	public static void adjustShots(final double degrees) {
+		SHOT_RAISE_ADJUSTMENT += degrees;
+	}
+
+	public static final double MAX_SUGGESTED_RANGE_METERS = 5.3;
 	public static final double LED_SHUTOFF_RANGE_METERS = 8.0;
 
 	public static final PIDController SWERVE_TURN_CONTROLLER = new PIDController(5.0, 0, 0);

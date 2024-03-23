@@ -23,6 +23,7 @@ public class Bender implements Subsystem {
     private static final String NT_KEY = "bender";
 
     private static Bender INSTANCE;
+
     public static Bender getInstance() {
         if (Objects.isNull(INSTANCE)) {
             INSTANCE = new Bender();
@@ -44,8 +45,8 @@ public class Bender implements Subsystem {
 
     public enum State {
         STOWED(0.0),
-        DEPLOYED(16.00),
-        WIGGLING(16.50); // used to be 16.5
+        DEPLOYED(14.75),
+        WIGGLING(14.75); // used to be 16.5
 
         public double rotations;
 
@@ -56,13 +57,14 @@ public class Bender implements Subsystem {
 
     private NeutralOut m_neutralOut;
     private PositionVoltage m_deployedPositionVoltage;
-    private boolean m_doSlam;
+    private boolean m_doSlam, m_doRelease;
 
     private Bender() {
         m_bender = new TalonFX(26, Constants.AUX_BUS_NAME);
 
         m_periodicIO = new PeriodicIO();
         m_doSlam = false;
+        m_doRelease = false;
 
         final var benderConfig = new TalonFXConfiguration();
         benderConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -101,8 +103,10 @@ public class Bender implements Subsystem {
 
         if (m_doSlam) {
             m_bender.setControl(m_deployedPositionVoltage.withPosition(State.DEPLOYED.rotations));
-        }else if (m_periodicIO.wantedState == State.WIGGLING) {
-            m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations));// + 3 * Math.sin(3 * Timer.getFPGATimestamp())));
+        } else if (m_doRelease) {
+            m_bender.setControl(m_deployedPositionVoltage.withPosition(State.STOWED.rotations));
+        } else if (m_periodicIO.wantedState == State.WIGGLING) {
+            m_bender.setControl(m_deployedPositionVoltage.withPosition(State.DEPLOYED.rotations));// + 3 * Math.sin(3 * Timer.getFPGATimestamp())));
         } else {
             m_bender.setControl(m_deployedPositionVoltage.withPosition(m_periodicIO.wantedState.rotations));
         }
@@ -110,6 +114,10 @@ public class Bender implements Subsystem {
 
     public void setDoSlam(final boolean doSlammy) {
         m_doSlam = doSlammy;
+    }
+
+    public void setDoRelease(final boolean doRelease) {
+        m_doRelease = doRelease;
     }
 
     public void setWantedState(final State state) {

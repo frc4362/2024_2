@@ -64,7 +64,7 @@ public final class Constants {
 			{5.8, 8.5, 120.0},
 	};
 
-	private static double SHOT_RAISE_ADJUSTMENT = 2.0;
+	private static double SHOT_FLAT_ADJUSTMENT = 0.5;//2.0;
 
 	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
 	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
@@ -92,11 +92,16 @@ public final class Constants {
 			ret = SHOT_PARAMETERS.get(distanceMeters);
 		}
 
-		return new ShotParam(ret.getAngle().plus(Rotation2d.fromDegrees(SHOT_RAISE_ADJUSTMENT)), ret.getVelocityRps());
+		return new ShotParam(ret.getAngle().plus(Rotation2d.fromDegrees(SHOT_FLAT_ADJUSTMENT)), ret.getVelocityRps());
+	}
+
+	private static final ShotParam FLAT_SHOT = new ShotParam(Rotation2d.fromDegrees(0.0), 120.0);
+	public static ShotParam getFlatShot() {
+		return FLAT_SHOT;
 	}
 
 	public static void adjustShots(final double degrees) {
-		SHOT_RAISE_ADJUSTMENT += degrees;
+		SHOT_FLAT_ADJUSTMENT += degrees;
 	}
 
 	public static final double MAX_SUGGESTED_RANGE_METERS = 5.3;

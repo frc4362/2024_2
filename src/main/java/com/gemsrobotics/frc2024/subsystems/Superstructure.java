@@ -6,7 +6,6 @@ import com.gemsrobotics.frc2024.ShotParam;
 import com.gemsrobotics.frc2024.SimpleTargetServer;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
-import com.gemsrobotics.lib.data.Pose2dRollingAverage;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
@@ -39,7 +38,8 @@ public final class Superstructure implements Subsystem {
 		SHOOTING,
 		AMPING,
 		CLIMBING,
-		CLIMBING_2
+		CLIMBING_2,
+		PASSING
 	}
 
 	public enum SystemState {
@@ -49,7 +49,8 @@ public final class Superstructure implements Subsystem {
 		SHOOTING,
 		AMPING,
 		CLIMBING,
-		CLIMBING_2
+		CLIMBING_2,
+		FLAT_PASSING
 	}
 
 	private static Superstructure INSTANCE = null;
@@ -153,10 +154,7 @@ public final class Superstructure implements Subsystem {
 			m_lastBadTagTime = Timer.getFPGATimestamp();
 		}
 
-		// blink for a second after a bad reading
-		if ((Timer.getFPGATimestamp() - m_lastBadTagTime) < 0.1) {
-			m_leds.setLEDS(LEDManager.LEDstate.BAD_TAGS);
-		} else if (DriverStation.isEnabled() &&
+		if (DriverStation.isEnabled() &&
 			(distanceToGoal > Constants.MAX_SUGGESTED_RANGE_METERS
 				&& distanceToGoal < Constants.LED_SHUTOFF_RANGE_METERS)
 		) {
@@ -175,6 +173,7 @@ public final class Superstructure implements Subsystem {
 			case AMPING -> handleAmping();
 			case CLIMBING -> handleClimbing();
 			case CLIMBING_2 -> handleClimbing_2();
+			case FLAT_PASSING -> handleFlatPass();
 			default -> SystemState.IDLE;
 		};
 
@@ -197,6 +196,7 @@ public final class Superstructure implements Subsystem {
 			case EXHAUSTING -> SystemState.EXHAUSTING;
 			case CLIMBING -> SystemState.CLIMBING;
 			case CLIMBING_2 -> SystemState.CLIMBING_2;
+			case PASSING -> SystemState.FLAT_PASSING;
 		};
 	}
 
@@ -216,28 +216,30 @@ public final class Superstructure implements Subsystem {
 			final var update = visionUpdate.get();
 			final var newPose = update.pose;
 
-			final var distance = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+			final var distanceFromCurrent = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+			final var distanceToTarget = m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
 
-			if (Math.abs(Math.toRadians(m_periodicIO.turnRate)) > 2.0) {
-				m_localizationStatePublisher.set("turning too fast");
-				return LocalizationState.TURNING_TOO_FAST;
-			}
+//			if (Math.abs(Math.toRadians(m_periodicIO.turnRate)) > 2.0) {
+//				m_localizationStatePublisher.set("turning too fast");
+//				return LocalizationState.TURNING_TOO_FAST;
+//			}
 
 			// if the new update is close enough to our estimate
-			if (m_isStrictlyLocalizing || true) {
-				m_tooFarVisionReadingCount = 0;
-
+			if ((distanceToTarget < 8.0 || m_isStrictlyLocalizing) && (DriverStation.isTeleop() || distanceFromCurrent < 3.5)) {
 				final var headingStd = m_isStrictlyLocalizing ? 0 : 9_999_999;
 
 				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(0.3, 0.3, headingStd));
 
 				m_localizationStatePublisher.set(m_isStrictlyLocalizing ? "strictly localized" : "localized");
 				return LocalizationState.LOCALIZED;
-			} else {
-				m_tooFarVisionReadingCount += 1;
-				m_localizationStatePublisher.set("rejected on distance");
-				return LocalizationState.REJECTED_ON_DISTANCE;
+//			} else {
+//				m_tooFarVisionReadingCount += 1;
+//				m_localizationStatePublisher.set("rejected on distance");
+//				return LocalizationState.REJECTED_ON_DISTANCE;
+//			}
 			}
+
+			return LocalizationState.REJECTED_ON_DISTANCE;
 		} else {
 			m_localizationStatePublisher.set("no targets detected (no update)");
 			return LocalizationState.NO_TARGET;
@@ -372,6 +374,7 @@ public final class Superstructure implements Subsystem {
 			m_bender.setWantedState(Bender.State.STOWED);
 		} else if (m_stateChangedTimer.get() > 0.25) {
 			m_arm.setWantedState(Arm.State.AMP);
+			m_bender.setWantedState(Bender.State.AMPING);
 		}
 
 		// magic number
@@ -380,6 +383,28 @@ public final class Superstructure implements Subsystem {
 		} else {
 			return applyWantedState();
 		}
+	}
+
+	private SystemState handleFlatPass() {
+		m_arm.setWantedState(Arm.State.FLAT);
+		m_bender.setWantedState(Bender.State.STOWED);
+
+		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
+			m_shooter.setVelocity(68.0, 68.0);
+		} else {
+			m_shooter.setOff();
+		}
+
+		m_arm.setWantedState(Arm.State.PASSING);
+
+		if (m_shooter.isReadyToShoot() && m_feedingAllowed) {
+			m_fintake.clearPiece();
+			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
+		} else {
+			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
+		}
+
+		return applyWantedState();
 	}
 
 	public boolean isReadyToShoot(final boolean waitForStopRotating) {

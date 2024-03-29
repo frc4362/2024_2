@@ -17,16 +17,18 @@ public class AmpSideAuto extends SequentialCommandGroup {
 		final var drive = Swerve.getInstance();
 		final var pathToFirstShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
 		final var pathToSecondShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
-		final var pathToThirdShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
-		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
-		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".5", false);
+		final var pathToThirdShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
+		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
+		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
 
 		addCommands(
 				new SetIntakeForcedOutCommand(true),
-				pathToFirstShootLocation,
+				drive.resetOdometryOnTrajectory(AUTO_NAME + ".1"),
+//				pathToFirstShootLocation,
 				new ShootNoteCommand(5.0, false),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(true)),
-				pathToSecondShootLocation,
+				pathToFirstShootLocation,
+//				pathToSecondShootLocation,
 				new ShootCommand(0.75, true, false),
 				new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),

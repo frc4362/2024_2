@@ -4,6 +4,7 @@ import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain.SwerveDriveState;
 
 import com.gemsrobotics.frc2024.Constants;
+import com.gemsrobotics.frc2024.subsystems.swerve.SwerveConstantsProd;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -54,10 +55,10 @@ public final class SwerveObserver implements Sendable {
     private Optional<SwerveDriveState> latestState = Optional.empty();
 
     // Locations for the swerve drive modules relative to the robot center.
-    Translation2d m_frontLeftLocation = new Translation2d(0.2604, 0.2604);
-    Translation2d m_frontRightLocation = new Translation2d(0.2604, -0.2604);
-    Translation2d m_backLeftLocation = new Translation2d(-0.2604, 0.2604);
-    Translation2d m_backRightLocation = new Translation2d(-0.2604, -0.2604);
+    Translation2d m_frontLeftLocation = SwerveConstantsProd.moduleTranslations[0];
+    Translation2d m_frontRightLocation = SwerveConstantsProd.moduleTranslations[1];
+    Translation2d m_backLeftLocation = SwerveConstantsProd.moduleTranslations[3];
+    Translation2d m_backRightLocation = SwerveConstantsProd.moduleTranslations[2];
 
     // Creating kinematics object using the module locations
     SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
@@ -128,15 +129,12 @@ public final class SwerveObserver implements Sendable {
             m_moduleSpeeds[i].setLength(state.ModuleStates[i].speedMetersPerSecond / (2 * m_maxSpeed));
 
             SmartDashboard.putData("Module " + i, m_moduleMechanisms[i]);
+            SmartDashboard.putNumber("Module " + i + " Heading Error", state.ModuleTargets[i].angle.minus(state.ModuleStates[i].angle).getDegrees());
         }
     }
 
     public Translation2d getMeasuredVelocity() {
         return new Translation2d(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
-    }
-
-    public void setShadowPose(final Pose2d pose) {
-
     }
 
     @Override

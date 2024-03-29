@@ -11,35 +11,49 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class SourceSideAuto1First extends SequentialCommandGroup {
-	private static final String AUTO_NAME = "Source 1+0+3 A";
+	private static final String AUTO_NAME = "Source 123";
 	public SourceSideAuto1First() {
 		final var drive = Swerve.getInstance();
-		final var driveToFirstShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
-		final var driveToSecondShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
-		final var driveTo3rdShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
-		final var driveTo4thShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
-		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + ".5", false);
+		final var driveToFirstShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".1", true);
+		final var driveToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
+		final var driveTo2ndShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".1", false);
+		final var driveTo3rdShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2"+ ".2", false);
+		final var driveTo4thShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".3", false);
+		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".4", false);
 
 		addCommands(
-				driveToFirstShot,
+				drive.resetOdometryOnTrajectory(AUTO_NAME + " 1" + ".1"),
 				new ShootNoteCommand(2.0, true),
 				new SetIntakeForcedOutCommand(true),
 				new ParallelDeadlineGroup(
-						driveToSecondShot,
 						new SequentialCommandGroup(
-								new WaitCommand(0.1),
+								driveToPickup,
+								new WaitCommand(0.1), // bouncing lol
+								driveTo2ndShot
+						),
+						new SequentialCommandGroup(
+								new WaitCommand(0.25),
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
 				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
-				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
-				driveTo3rdShot,
+				new ParallelDeadlineGroup(
+						driveTo3rdShot,
+						new SequentialCommandGroup(
+								new WaitCommand(0.25),
+								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+						)
+				),
 				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
-				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
+				new ParallelDeadlineGroup(
+						driveTo4thShot,
+						new SequentialCommandGroup(
+								new WaitCommand(0.25),
+								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+						)
+				),
 				new SetIntakeForcedOutCommand(false),
-				driveTo4thShot,
 				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
-				new SetIntakeForcedOutCommand(false),
 				driveToMiddle
 		);
 	}

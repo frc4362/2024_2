@@ -10,6 +10,8 @@ import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -78,12 +80,12 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
-		m_chooser.addOption("Source-Side Auto 2 First", new SourceSideAuto2First());
+//		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
+//		m_chooser.addOption("Source-Side Auto 2 First", new SourceSideAuto2First());
 		m_chooser.addOption("Source-Side Auto 1 First", new SourceSideAuto1First());
-		m_chooser.addOption("SAFE AMP AUTO", new SafeAmpSideAuto());
-		m_chooser.addOption("Safe Auto", new SafeAuto());
-		m_chooser.addOption("Trespass Auto", new TrespassAuto());
+//		m_chooser.addOption("Safe Auto", new SafeAuto());
+//		m_chooser.addOption("Trespass Auto", new TrespassAuto());
+//		m_chooser.addOption("Center Auto", new CenterAuto());
 //		m_chooser.addOption("Shoot Note", new ShootNoteCommand(5.0, true));
 //		m_chooser.addOption("Quasi-Forwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
 //		m_chooser.addOption("Quasi-Backwards Char", m_drive.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
@@ -96,7 +98,13 @@ public class Robot extends TimedRobot {
 		// heh heh
 		m_drive.getDaqThread().setThreadPriority(99);
 
-//		SignalLogger.enableAutoLogging(false);
+		// ehehe heheheheheh eehheehhehn
+		RobotController.setBrownoutVoltage(5.0);
+	}
+
+	@Override
+	public void disabledInit() {
+		m_drive.setBraking();
 	}
 
 	@Override
@@ -114,6 +122,7 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		m_superstructure.setAlliance();
 		m_chooser.getSelected().schedule();
+		m_superstructure.setStrictLocalizationEnabled(false);
 	}
 
 	@Override
@@ -141,11 +150,19 @@ public class Robot extends TimedRobot {
 		m_translationPublisher.set(m_oi.getWantedSwerveTranslation().toString());
 		m_rotationPublisher.set(m_oi.getWantedSwerveRotation());
 
-		if (m_oi.getCopilot().getXButton()) {
-			// subwoofer shot
-			m_superstructure.setOverrideShotParams(Constants.getShotParameters(0));
-		} else {
+		final boolean wantsPass;
+		final var shotOverride = m_oi.getCopilotShotOverride();
+		if (shotOverride.isEmpty()) {
 			m_superstructure.setOverrideParamsCleared();
+			wantsPass = false;
+		} else {
+			switch (shotOverride.get()) {
+				case SUBWOOFER -> m_superstructure.setOverrideShotParams(Constants.getShotParameters(0.0));
+				case FLAT -> m_superstructure.setOverrideShotParams(Constants.getFlatShot());
+				default -> m_superstructure.setOverrideParamsCleared();
+			}
+
+			wantsPass = shotOverride.get() != OI.OverrideShotType.SUBWOOFER;
 		}
 
 		m_superstructure.setStrictLocalizationEnabled(m_oi.getCopilot().getStartButton() && m_oi.getCopilot().getBackButton());
@@ -155,14 +172,23 @@ public class Robot extends TimedRobot {
 		}
 
 		final var wantsAmp = m_oi.getPilot().getRightBumper();
+		final var wantsAmpSpit = m_oi.getPilot().getRightTriggerAxis() > 0.5;
 
 		m_superstructure.setWantsIntaking(m_oi.getPilot().getLeftTriggerAxis() > 0.5);
-		m_superstructure.setWantsAmpSpit(m_oi.getPilot().getRightTriggerAxis() > 0.5);
+		m_superstructure.setWantsAmpSpit(wantsAmpSpit);
 
 		if (wantsAmp) {
 			m_drive.setOpenLoopFaceHeadingJoysticks(
 					m_oi.getWantedSwerveTranslation(),
 					Rotation2d.fromDegrees(-90));
+		} else if (wantsPass) {
+			m_drive.setOpenLoopJoysticks(
+					m_oi.getWantedSwerveTranslation(),
+					m_oi.getWantedSwerveRotation(),
+					m_oi.getWantsEvasion());
+//			m_drive.setOpenLoopFaceHeadingJoysticks(
+//					m_oi.getWantedSwerveTranslation(),
+//					Constants.getAllianceConstants().getPassAngle());
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
 					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
 					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
@@ -194,14 +220,16 @@ public class Robot extends TimedRobot {
 			wantsClimb2 = !wantsClimb2;
 		}
 
+		m_fintake.setStallIntakeBack(m_oi.getCopilot().getYButton());
 		if (m_oi.getCopilot().getYButtonReleased()) {
 			m_fintake.setIntakeReset();
 		}
 
-		m_fintake.setStallIntakeBack(m_oi.getCopilot().getYButton());
-
-		if (wantsAmp) {
+		m_superstructure.setFeedingAllowed(m_oi.getPilot().getRightTriggerAxis() > 0.5);
+		if (wantsAmp && wantsAmpSpit) {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);
+		} else if (wantsPass) {
+			m_superstructure.setWantedState(Superstructure.WantedState.PASSING);
 		} else if (wantsClimb2) {
 			m_superstructure.setWantedState(Superstructure.WantedState.CLIMBING_2);
 			m_climber.setVoltsProtected(10 * m_oi.getCopilot().getLeftTriggerAxis());

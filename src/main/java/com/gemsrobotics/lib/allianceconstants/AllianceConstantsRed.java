@@ -9,11 +9,17 @@ public class AllianceConstantsRed extends AllianceConstants {
     public static final Rotation2d RED_SOUTH = Rotation2d.fromDegrees(0);
     public static final Rotation2d RED_EAST = Rotation2d.fromDegrees(90);
     public static final Rotation2d RED_WEST = Rotation2d.fromDegrees(270);
+    public static final Rotation2d RED_PASS_ANGLE = Rotation2d.fromDegrees(-45);
     public static final Translation2d RED_SPEAKER_METERS =new Translation2d(16.5, 5.5); // Approximated from Choreo points
     public static final Translation2d RED_AMP_METERS = new Translation2d(14.7, 8.15); // Approximated from Choreo points
     public static final Translation2d RED_SOURCE_METERS = new Translation2d(0.95, 0.575); //Approximated from Choreo points
 
     public AllianceConstantsRed() {}
+
+    @Override
+    public Rotation2d getPassAngle() {
+        return RED_PASS_ANGLE;
+    }
 
     @Override
     public Rotation2d getNorth() {

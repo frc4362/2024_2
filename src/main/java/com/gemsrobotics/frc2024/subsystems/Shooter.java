@@ -133,8 +133,8 @@ public final class Shooter implements Subsystem {
 		wheelConfig.Voltage.PeakReverseVoltage = -12.0;
 		wheelConfig.CurrentLimits.SupplyCurrentLimitEnable = false;
 		wheelConfig.CurrentLimits.SupplyCurrentLimit = 40; // lol
-		wheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-		wheelConfig.CurrentLimits.StatorCurrentLimit = 100; // lol
+		wheelConfig.CurrentLimits.StatorCurrentLimitEnable = false;
+		wheelConfig.CurrentLimits.StatorCurrentLimit = 200; // lol
 
 		TalonUtils.configureTalon(wheelConfig, m_wheelLeft);
 		// invert the other wheel

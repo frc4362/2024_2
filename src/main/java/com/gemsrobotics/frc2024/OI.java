@@ -71,4 +71,24 @@ public final class OI {
 	public XboxController getCopilot() {
 		return m_copilot;
 	}
+
+	public enum OverrideShotType {
+		SUBWOOFER,
+		FLAT,
+		OVER_STAGE
+	}
+
+	public Optional<OverrideShotType> getCopilotShotOverride() {
+		final var copilotDpad = m_copilot.getPOV();
+
+		if (copilotDpad == 180) {
+			return Optional.of(OverrideShotType.SUBWOOFER);
+		} else if (copilotDpad == 0) {
+			return Optional.of(OverrideShotType.OVER_STAGE);
+		} else if (copilotDpad == 90) {
+			return Optional.of(OverrideShotType.FLAT);
+		} else {
+			return Optional.empty();
+		}
+	}
 }

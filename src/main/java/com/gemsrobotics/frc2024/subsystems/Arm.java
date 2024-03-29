@@ -70,6 +70,8 @@ public final class Arm implements Subsystem {
 
     public enum State {
         STOWED(SHOULDER_MIN, ELBOW_MIN),
+        FLAT(-0.045, 0.0),
+        PASSING(SHOULDER_MIN, Rotation2d.fromDegrees(30.0).getRotations()),
 //        AMP(0.0765, 0.14),
 //        AMP(0.075, 0.135),
         AMP(0.076, 0.135),

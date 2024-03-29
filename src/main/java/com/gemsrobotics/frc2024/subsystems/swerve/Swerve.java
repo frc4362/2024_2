@@ -13,9 +13,12 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.mechanisms.swerve.*;
 
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.gemsrobotics.frc2024.Constants;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 import com.gemsrobotics.lib.math.Rotation2dPlus;
@@ -83,10 +86,11 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     private final SwerveRequest.SwerveDriveBrake m_brakeRequest;
     private final ChoreoControlFunction m_locationFeedbackController;
     private final List<DoublePublisher> m_voltagePublishers;
+    private final List<DoublePublisher> m_torquePublishers;
     private final DoublePublisher m_trajectoryErrorPublisher;
     private final DoublePublisher m_velocityErrorPublisher;
     private final DoublePublisher m_angleToSpeaker;
-    private final List<StatusSignal<Double>> m_voltageSignals;
+    private final List<StatusSignal<Double>> m_voltageSignals, m_torqueSignals;
     private AllianceConstants m_allianceConstants;
 	private Optional<Rotation2d> m_maintainHeadingGoal;
 
@@ -153,6 +157,12 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         m_voltagePublishers.add(myTable.getDoubleTopic("back_left_voltage").publish());
         m_voltagePublishers.add(myTable.getDoubleTopic("back_right_voltage").publish());
 
+        m_torquePublishers = new ArrayList<>(4);
+        m_torquePublishers.add(myTable.getDoubleTopic("front_left_torque").publish());
+        m_torquePublishers.add(myTable.getDoubleTopic("front_right_torque").publish());
+        m_torquePublishers.add(myTable.getDoubleTopic("back_left_torque").publish());
+        m_torquePublishers.add(myTable.getDoubleTopic("back_right_torque").publish());
+
         m_trajectoryErrorPublisher = myTable.getDoubleTopic("trajectory_error").publish();
         m_trajectoryErrorPublisher.setDefault(0.0);
 
@@ -160,13 +170,17 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         m_velocityErrorPublisher.setDefault(0.0);
 
         m_voltageSignals = new ArrayList<>(4);
+        m_torqueSignals = new ArrayList<>(4);
 
         for (final var module : Modules) {
             var closedLoopRampConfigs = new ClosedLoopRampsConfigs();
+            var openLoopRampConfigs = new OpenLoopRampsConfigs();
             var driveTalonFXConfigurator = module.getDriveMotor().getConfigurator();
             closedLoopRampConfigs.DutyCycleClosedLoopRampPeriod = 0;
             closedLoopRampConfigs.VoltageClosedLoopRampPeriod = 0;
+            openLoopRampConfigs.VoltageOpenLoopRampPeriod = 0.02;
             driveTalonFXConfigurator.apply(closedLoopRampConfigs);
+            driveTalonFXConfigurator.apply(openLoopRampConfigs);
 
             var angleCurrentLimits = new CurrentLimitsConfigs();
             var angleTalonFXConfigurator = module.getSteerMotor().getConfigurator();
@@ -186,7 +200,10 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
             driveTalonFXConfigurator.apply(driveCurrentLimits);
 
             m_voltageSignals.add(module.getDriveMotor().getMotorVoltage());
+            m_torqueSignals.add(module.getDriveMotor().getTorqueCurrent());
         }
+
+        configNeutralMode(NeutralModeValue.Brake);
 
         m_angleToSpeaker = myTable.getDoubleTopic("shooter_to_speaker_degrees").publish();
 
@@ -214,6 +231,10 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         m_angleToSpeaker.set(getAimingError().getDegrees());
         for (int i = 0; i < m_voltagePublishers.size(); i++) {
             m_voltagePublishers.get(i).set(m_voltageSignals.get(i).refresh().getValue());
+        }
+
+        for (int i = 0; i < m_torquePublishers.size(); i++) {
+            m_torquePublishers.get(i).set(m_torqueSignals.get(i).refresh().getValue());
         }
     }
 
@@ -375,6 +396,15 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         return DriverStation.getAlliance().map(alliance -> alliance == DriverStation.Alliance.Red).orElse(false);
     }
 
+    public Command resetOdometryOnTrajectory(final String trajectoryName) {
+        final var trajectory = Choreo.getTrajectory(trajectoryName);
+        return new InstantCommand(() -> {
+            final var initialState = trajectory.getInitialState();
+            final var maybeFlippedState = shouldFlipState() ? initialState.flipped() : initialState;
+            seedFieldRelative(maybeFlippedState.getPose());
+        });
+    }
+
     public Command getTrackTrajectoryCommand(final String trajectoryName, final boolean resetPose) {
         final var trajectory = Choreo.getTrajectory(trajectoryName);
         final var trackCommand = Choreo.choreoSwerveCommand(
@@ -385,7 +415,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
                     m_velocityErrorPublisher.set(Math.hypot(referencePose.velocityX, referencePose.velocityY) - m_telemetry.getMeasuredVelocity().getNorm());
                     return m_locationFeedbackController.apply(currentPose, referencePose);
                 },
-                 speeds -> setControl(m_autoRequest.withSpeeds(speeds)),
+                speeds -> setControl(m_autoRequest.withSpeeds(speeds)),
                 this::shouldFlipState
         );
 
@@ -397,7 +427,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
                 }).onlyIf(() -> resetPose),
                 trackCommand,
                 new InstantCommand(() -> setControl(m_idleRequest))
-        );
+        ).withName("TrackCommand[\"" + trajectoryName + "\"]");
     }
 
     public SwerveObserver getObserver() {

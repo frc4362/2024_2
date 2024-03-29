@@ -114,9 +114,9 @@ public class Fintake implements Subsystem {
 		intakeConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 		intakeConfig.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.0;
 		intakeConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-		intakeConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-		intakeConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-		intakeConfig.CurrentLimits.StatorCurrentLimit = 60.0;
+		intakeConfig.CurrentLimits.SupplyCurrentLimit = 60.0;
+//		intakeConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+//		intakeConfig.CurrentLimits.StatorCurrentLimit = 60.0;
 		intakeConfig.Feedback.RotorToSensorRatio = 1.0;
 		intakeConfig.Feedback.SensorToMechanismRatio = 1.0;
 		intakeConfig.Slot0.kS = 0.05;
@@ -238,7 +238,7 @@ public class Fintake implements Subsystem {
 						m_deployerRequest.Position = INTAKE_DEPLOYED_ROTATIONS;
 
 						if (m_periodicIO.deployerPosition > 0.0) {
-							m_intakeRequest.Output = 10.0 / 12.0;
+							m_intakeRequest.Output = 12.0 / 12.0;
 						} else {
 							m_intakeRequest.Output = 0.0;
 						}
@@ -366,7 +366,7 @@ public class Fintake implements Subsystem {
 	}
 
 	public boolean isFeederStalled() {
-		return m_periodicIO.feederCurrentDrawAmps < -35.0;
+		return m_periodicIO.feederCurrentDrawAmps < -50.0;
 	}
 
 	public void setWantedState(final WantedState state) {

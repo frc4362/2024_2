@@ -9,7 +9,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import com.gemsrobotics.frc2024.Constants;
-import com.gemsrobotics.frc2024.OI;
 import com.gemsrobotics.lib.TalonUtils;
 import com.gemsrobotics.lib.math.Units;
 import edu.wpi.first.math.filter.LinearFilter;
@@ -17,8 +16,6 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -29,13 +26,14 @@ import java.util.Objects;
 public class Fintake implements Subsystem {
 	private static final String NT_KEY = "fintake";
 	private static final boolean DO_STOPPING = true;
+	private static final boolean DO_BACKFEED_STOP = true;
 
 	private static final double DEPLOYMENT_RATIO = 25.48; // 25.48 turns of the motor spins the intake around once
 	private static final double VELOCITY_RATIO = 1.7; // 1.7 turns of the motor spins the intake rollers once
 	private static final double kV = 0.12 / 1.7;
 	private static final double kG = -0.42; // volts
 
-	private static final double INTAKE_SHOT_PROTECTION_SECONDS = 0.75;
+	private static final double INTAKE_SHOT_PROTECTION_SECONDS = 0.5;
 
 	private static final double ROLLER_RADIUS = Units.inches2Meters(1.25) / 2.0;
 	public static final double INTAKE_STARTING_ROTATIONS = -0.22;
@@ -43,7 +41,7 @@ public class Fintake implements Subsystem {
 	public static final double INTAKE_HORIZONTAL_ROTATIONS = 0.0;
 	public static final double INTAKE_DEPLOYED_ROTATIONS = 0.14;
 
-	public static final double INTAKE_AMPING_ROTATIONS = -0.14;
+	public static final double INTAKE_AMPING_ROTATIONS = -0.17;
 
 	private static Fintake INSTANCE;
 	public static Fintake getInstance() {
@@ -61,7 +59,7 @@ public class Fintake implements Subsystem {
 		EXHAUSTING,
 		INTAKING_AND_SHOOTING,
 		OUT_AND_OFF,
-		AMP
+		AMPING
 	}
 
 	public enum State {
@@ -243,7 +241,7 @@ public class Fintake implements Subsystem {
 							m_intakeRequest.Output = 0.0;
 						}
 
-						m_feederVoltsRequest.Output = -7.0;
+						m_feederVoltsRequest.Output = -5.0;
 						newState = DO_STOPPING && isFeederStalled() ? State.HOLDING : State.INTAKING;
 
 						if (newState == State.HOLDING) {
@@ -310,7 +308,7 @@ public class Fintake implements Subsystem {
 				newState = State.OUT_AND_OFF;
 				break;
 
-			case AMP:
+			case AMPING:
 				m_deployerRequest.Position = INTAKE_AMPING_ROTATIONS;
 				m_intakeRequest.Output = 0.0;
 				m_feederVoltsRequest.Output = -11.0;
@@ -323,16 +321,24 @@ public class Fintake implements Subsystem {
 
 		m_intake.setControl(m_intakeRequest);
 
-		final var timeHolding = Timer.getFPGATimestamp() - m_periodicIO.lastIntakeTimestamp;
-		if (m_periodicIO.state == State.HOLDING && timeHolding > 0.25 && timeHolding < INTAKE_SHOT_PROTECTION_SECONDS) {
-			if (!m_periodicIO.hasBackedOut) {
-				m_feederBackoutRequest.Position = m_periodicIO.feederPosition + 0.45;
-				m_periodicIO.hasBackedOut = true;
-			}
+		if (DO_BACKFEED_STOP) {
+			final var timeHolding = Timer.getFPGATimestamp() - m_periodicIO.lastIntakeTimestamp;
+			if (m_periodicIO.state == State.HOLDING && timeHolding > 0.1 && timeHolding < INTAKE_SHOT_PROTECTION_SECONDS) {
+				if (!m_periodicIO.hasBackedOut) {
+					m_feederBackoutRequest.Position = m_periodicIO.feederPosition + 0.25;
+					m_periodicIO.hasBackedOut = true;
+				}
 
-			m_feeder.setControl(m_feederBackoutRequest);
-		} else  {
-			m_feeder.setControl(m_feederVoltsRequest);
+				m_feeder.setControl(m_feederBackoutRequest);
+			} else  {
+				m_feeder.setControl(m_feederVoltsRequest);
+			}
+		} else {
+			if (m_periodicIO.state == State.HOLDING) {
+				m_feeder.setControl(new StaticBrake());
+			} else {
+				m_feeder.setControl(m_feederVoltsRequest);
+			}
 		}
 
 		if (m_forcedOut) {
@@ -367,6 +373,10 @@ public class Fintake implements Subsystem {
 
 	public boolean isFeederStalled() {
 		return m_periodicIO.feederCurrentDrawAmps < -50.0;
+	}
+
+	public boolean isIntakeDown() {
+		return m_periodicIO.deployerPosition > 0.07;
 	}
 
 	public void setWantedState(final WantedState state) {

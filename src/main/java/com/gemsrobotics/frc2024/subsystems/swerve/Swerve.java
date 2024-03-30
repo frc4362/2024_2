@@ -20,6 +20,7 @@ import com.ctre.phoenix6.mechanisms.swerve.*;
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.gemsrobotics.frc2024.Constants;
+import com.gemsrobotics.frc2024.subsystems.NoteDetector;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 import com.gemsrobotics.lib.math.Rotation2dPlus;
 import com.gemsrobotics.lib.math.Units;
@@ -249,34 +250,22 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
      * @param fieldTranslationVector A vector in alliance-relative space. 1.0 is towards the other alliance wall.
      * @return A vector in field-space, corrected for ease of use. Flipped for red alliance
      */
-    private Translation2d makeOpenLoopTranslation(final Translation2d fieldTranslationVector) {
+    private Translation2d makeOpenLoopTranslation(final Translation2d fieldTranslationVector, final boolean doAxisLock) {
         double magnitude = MathUtil.applyDeadband(fieldTranslationVector.getNorm(), DEADBAND, 1.0);
         // scale for low-range movements
         magnitude = Math.pow(magnitude, 1.5);
 
         var direction = new Rotation2dPlus(fieldTranslationVector.getAngle());
-        final var nearestPole = direction.getNearestPole();
-        if (Math.abs(direction.minus(nearestPole).getDegrees()) < 5) {
-            direction = nearestPole;
+        if (doAxisLock) {
+            final var nearestPole = direction.getNearestPole();
+            if (Math.abs(direction.minus(nearestPole).getDegrees()) < 5) {
+                direction = nearestPole;
+            }
         }
 
         // flip movement based on alliance
         final var allianceDirection = direction.rotateBy(m_allianceConstants.getNorth());
         return new Translation2d(magnitude * m_constants.getMaxSpeedMetersPerSecond(), allianceDirection);
-    }
-
-    public void setOpenLoopAiming(
-            final Translation2d joystickTranslation,
-            final double aimingFeedback
-    ) {
-        final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation);
-
-        m_teleopRequest.VelocityX = scaledTranslation.getX();
-        m_teleopRequest.VelocityY = scaledTranslation.getY();
-        m_teleopRequest.Evading = false;
-        m_teleopRequest.RotationalRate = aimingFeedback * m_constants.getMaxAngularRateRadiansPerSecond() * 0.5;
-
-        setControl(m_teleopRequest);
     }
 
     /**
@@ -288,12 +277,13 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     public void setOpenLoopJoysticks(
             final Translation2d joystickTranslation,
             final double joystickRotationRate,
+            final boolean lockCardinals,
             final boolean evading
     ) {
         final var dbRotation = MathUtil.applyDeadband(joystickRotationRate, DEADBAND, 1.0)
                                        * m_constants.getMaxAngularRateRadiansPerSecond()
                                        * ROTATION_RATE_SCALAR;
-		final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation);
+		final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation, lockCardinals);
 
         // if we're basically just sitting still
         if (dbRotation == 0.0 && scaledTranslation.getNorm() < 0.01) {
@@ -324,8 +314,37 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         setControl(m_teleopRequest);
     }
 
+    private static final double kP = -3.0;
+    public void setOpenLoopNoteChasing(
+            final Translation2d joystickTranslation,
+            final double joystickRotationRate
+    ) {
+        Optional<Rotation2d> vehicleToNoteRotation = NoteDetector.getInstance().getVehicleToNoteRotation();
+
+        // if we don't see a note, exit early
+        if (vehicleToNoteRotation.isEmpty()) {
+            setOpenLoopJoysticks(joystickTranslation, joystickRotationRate, false, false);
+            return;
+        }
+
+        final Rotation2d fieldToVehicleRotation = getState().Pose.getRotation();
+        final Rotation2d vehicleToNote = vehicleToNoteRotation.get();
+        final var correction = kP * vehicleToNote.getRadians();
+        final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation, false);
+        final var pointedTranslation = new Translation2d(scaledTranslation.getNorm(), fieldToVehicleRotation.plus(vehicleToNote));
+
+        m_maintainHeadingGoal = Optional.empty();
+
+        m_teleopRequest.VelocityX = pointedTranslation.getX();
+        m_teleopRequest.VelocityY = pointedTranslation.getY();
+        m_teleopRequest.Evading = false;
+        m_teleopRequest.RotationalRate = correction;
+
+        setControl(m_teleopRequest);
+    }
+
 	public void setOpenLoopFaceHeadingJoysticks(final Translation2d joystickTranslation, final Rotation2d heading) {
-		final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation);
+		final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation, true);
 		setOpenLoopFaceHeading(scaledTranslation, heading);
 	}
 

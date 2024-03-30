@@ -91,4 +91,8 @@ public final class OI {
 			return Optional.empty();
 		}
 	}
+
+	public boolean getWantsNoteChase() {
+		return m_pilot.getLeftBumper();
+	}
 }

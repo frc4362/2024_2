@@ -24,7 +24,7 @@ public class SourceSideAuto1First extends SequentialCommandGroup {
 		addCommands(
 				drive.resetOdometryOnTrajectory(AUTO_NAME + " 1" + ".1"),
 				new ShootNoteCommand(2.0, true),
-				new SetIntakeForcedOutCommand(true),
+				new SetIntakeForcedOutCommand(false),
 				new ParallelDeadlineGroup(
 						new SequentialCommandGroup(
 								driveToPickup,

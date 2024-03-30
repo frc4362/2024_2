@@ -12,34 +12,30 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.*;
 
 public class AmpSideAuto extends SequentialCommandGroup {
-	private static final String AUTO_NAME = "Amp 1+1+3 A";
+	private static final String AUTO_NAME = "Amp 123";
 	public AmpSideAuto() {
 		final var drive = Swerve.getInstance();
-		final var pathToFirstShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
-		final var pathToSecondShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
-		final var pathToThirdShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".2", false);
-		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
-		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
+		final var pathToFirstShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".1", true);
+		final var pathToSecondShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
+		final var pathToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".3", false);
+		final var pathToThirdShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".1", false);
+		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".2", false);
+		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".3", false);
 
 		addCommands(
 				new SetIntakeForcedOutCommand(true),
-				drive.resetOdometryOnTrajectory(AUTO_NAME + ".1"),
-//				pathToFirstShootLocation,
+				pathToFirstShootLocation,
 				new ShootNoteCommand(5.0, false),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(true)),
-				pathToFirstShootLocation,
-//				pathToSecondShootLocation,
-				new ShootCommand(0.75, true, false),
+				pathToSecondShootLocation,
+				new ShootCommand(0.45, true, false),
 				new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),
+				new SetIntakeForcedOutCommand(false),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
-				new ParallelDeadlineGroup(
-						pathToThirdShootLocation,
-						new SequentialCommandGroup(
-								new WaitCommand(2.0),
-								new InstantCommand(() -> Shooter.getInstance().setDoIdling(false))
-						)
-				).andThen(new InstantCommand(() -> Shooter.getInstance().setDoIdling(false))),
+				pathToPickup,
+				new WaitCommand(0.1),
+				pathToThirdShootLocation,
 				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				pathToFourthShootLocation,

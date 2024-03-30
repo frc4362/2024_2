@@ -17,7 +17,7 @@ public class ShootNoteCommand extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.SHOOTING),
 								new ParallelDeadlineGroup(
 										new SequentialCommandGroup(
-												new WaitUntilCommand(() -> Swerve.getInstance().getAimingError().getDegrees() < 2.5),
+												new WaitUntilCommand(() -> Swerve.getInstance().getAimingError().getDegrees() < 1.25),
 												new InstantCommand(() -> Superstructure.getInstance().setFeedingAllowed(true)),
 												new WaitUntilCommand(() -> Superstructure.getInstance().isReadyToShoot(true)),
 												new WaitUntilCommand(() -> Shooter.getInstance().getMeasuredCurrentDraw() > 40.0),

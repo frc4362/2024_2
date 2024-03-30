@@ -1,9 +1,6 @@
 package com.gemsrobotics.frc2024.subsystems;
 
-import com.gemsrobotics.frc2024.Constants;
-import com.gemsrobotics.frc2024.NewTargetServer;
-import com.gemsrobotics.frc2024.ShotParam;
-import com.gemsrobotics.frc2024.SimpleTargetServer;
+import com.gemsrobotics.frc2024.*;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 
@@ -154,7 +151,12 @@ public final class Superstructure implements Subsystem {
 			m_lastBadTagTime = Timer.getFPGATimestamp();
 		}
 
-		if (DriverStation.isEnabled() &&
+		if (OI.getInstance().getWantsNoteChase()
+					&& m_fintake.isIntakeDown()
+					&& NoteDetector.getInstance().getVehicleToNoteRotation().isPresent()
+		) {
+			m_leds.setLEDS(LEDManager.LEDstate.BAD_TAGS);
+		} else if (DriverStation.isEnabled() &&
 			(distanceToGoal > Constants.MAX_SUGGESTED_RANGE_METERS
 				&& distanceToGoal < Constants.LED_SHUTOFF_RANGE_METERS)
 		) {
@@ -225,7 +227,7 @@ public final class Superstructure implements Subsystem {
 //			}
 
 			// if the new update is close enough to our estimate
-			if ((distanceToTarget < 8.0 || m_isStrictlyLocalizing) && (DriverStation.isTeleop() || distanceFromCurrent < 3.5)) {
+			if ((distanceToTarget < 8.0 || m_isStrictlyLocalizing) && (DriverStation.isTeleop() || distanceFromCurrent < 5.0)) {
 				final var headingStd = m_isStrictlyLocalizing ? 0 : 9_999_999;
 
 				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(0.3, 0.3, headingStd));
@@ -275,7 +277,7 @@ public final class Superstructure implements Subsystem {
 			m_fintake.clearPiece();
 			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
 		} else {
-			m_fintake.setWantedState(Fintake.WantedState.NEUTRAL);
+			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
 		}
 
 		return applyWantedState();
@@ -357,7 +359,7 @@ public final class Superstructure implements Subsystem {
 		}
 
 //		if (m_stateChangedTimer.get() > 1.0) {
-			m_fintake.setWantedState(Fintake.WantedState.AMP);
+			m_fintake.setWantedState(Fintake.WantedState.AMPING);
 //		} else {
 //			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
 //		}

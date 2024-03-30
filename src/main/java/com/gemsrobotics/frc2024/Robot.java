@@ -72,7 +72,7 @@ public class Robot extends TimedRobot {
 				m_climber,
 				m_leds,
 				Bender.getInstance(),
-				SimpleTargetServer.getInstance(),
+				NoteDetector.getInstance(),
 				m_superstructure
 		);
 
@@ -80,9 +80,9 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-//		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
+		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
 //		m_chooser.addOption("Source-Side Auto 2 First", new SourceSideAuto2First());
-		m_chooser.addOption("Source-Side Auto 1 First", new SourceSideAuto1First());
+		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
 //		m_chooser.addOption("Safe Auto", new SafeAuto());
 //		m_chooser.addOption("Trespass Auto", new TrespassAuto());
 //		m_chooser.addOption("Center Auto", new CenterAuto());
@@ -173,6 +173,7 @@ public class Robot extends TimedRobot {
 
 		final var wantsAmp = m_oi.getPilot().getRightBumper();
 		final var wantsAmpSpit = m_oi.getPilot().getRightTriggerAxis() > 0.5;
+		final var wantsIntaking = m_oi.getPilot().getLeftTriggerAxis() > 0.5;
 
 		m_superstructure.setWantsIntaking(m_oi.getPilot().getLeftTriggerAxis() > 0.5);
 		m_superstructure.setWantsAmpSpit(wantsAmpSpit);
@@ -185,20 +186,23 @@ public class Robot extends TimedRobot {
 			m_drive.setOpenLoopJoysticks(
 					m_oi.getWantedSwerveTranslation(),
 					m_oi.getWantedSwerveRotation(),
+					true,
 					m_oi.getWantsEvasion());
-//			m_drive.setOpenLoopFaceHeadingJoysticks(
-//					m_oi.getWantedSwerveTranslation(),
-//					Constants.getAllianceConstants().getPassAngle());
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
 					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
 					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
 					 && !m_oi.getCopilot().getXButton()
 		) {
 			m_drive.setAimingAtGoal(m_oi.getWantedSwerveTranslation());
+		} else if (m_oi.getWantsNoteChase()) {
+			m_drive.setOpenLoopNoteChasing(
+					m_oi.getWantedSwerveTranslation(),
+					m_oi.getWantedSwerveRotation());
 		} else {
 			m_drive.setOpenLoopJoysticks(
 					m_oi.getWantedSwerveTranslation(),
 					m_oi.getWantedSwerveRotation(),
+					!wantsIntaking,
 					m_oi.getWantsEvasion());
 		}
 
@@ -238,7 +242,7 @@ public class Robot extends TimedRobot {
 			m_climber.setVolts(0.0);
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5) {
 			m_superstructure.setWantedState(Superstructure.WantedState.SHOOTING);
-		} else if (m_oi.getPilot().getLeftTriggerAxis() > 0.5) {
+		} else if (wantsIntaking) {
 			m_superstructure.setWantedState(Superstructure.WantedState.INTAKING);
 		} else {
 			m_superstructure.setWantedState(Superstructure.WantedState.IDLE);

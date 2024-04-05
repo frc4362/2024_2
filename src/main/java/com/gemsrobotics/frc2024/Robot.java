@@ -82,7 +82,7 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
+		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto());
 		m_chooser.addOption("Source-Side 43s", new SourceSideAuto2First());
 		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
 //		m_chooser.addOption("Safe Auto", new SafeAuto());
@@ -139,6 +139,7 @@ public class Robot extends TimedRobot {
 		// dont ask....
 		// flush controls
 		m_oi.getPilot().getYButtonPressed();
+		m_oi.getPilot().getXButtonPressed();
 		m_oi.getPilot().getBButtonPressed();
 		m_oi.getPilot().getStartButtonPressed();
 		m_oi.getCopilot().getLeftBumperPressed();
@@ -217,9 +218,11 @@ public class Robot extends TimedRobot {
 
 		Bender.getInstance().setDoSlam(m_oi.getCopilot().getAButton());
 		Bender.getInstance().setDoRelease(m_oi.getCopilot().getBButton());
+		Superstructure.getInstance().setWantsEarlyClimb(m_oi.getCopilot().getRightTriggerAxis() > 0.5);
 
-		// toggles for climb
-		if (m_oi.getPilot().getYButtonPressed()) {
+		// toggles for climb, 2 buttons
+		// check this works?
+		if ((m_oi.getPilot().getYButtonPressed() || m_oi.getPilot().getXButtonPressed()) && (m_oi.getPilot().getXButton() && m_oi.getPilot().getYButton())) {
 			wantsClimb1 = !wantsClimb1;
 		}
 

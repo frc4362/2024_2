@@ -4,6 +4,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 
 public final class Translation2dPlus extends Translation2d {
+
+	public static final Rotation2d ROTATION_90_DEGREES = Rotation2d.fromDegrees(90);
+
 	public static double dot(final Translation2d a, final Translation2d b) {
 		return a.getX() * b.getX() + a.getY() * b.getY();
 	}
@@ -152,7 +155,7 @@ public final class Translation2dPlus extends Translation2d {
 	public double distanceToLine(final Translation2d a, final Translation2d b) {
 		final var point = new Translation2dPlus(a, this);
 		final var line = new Translation2dPlus(a, b);
-		final var perpLine = line.rotateBy(new Rotation2d(90));
+		final var perpLine = line.rotateBy(ROTATION_90_DEGREES);
 		return Math.abs(point.scal(perpLine));
 	}
 }

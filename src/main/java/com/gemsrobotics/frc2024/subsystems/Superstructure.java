@@ -86,6 +86,7 @@ public final class Superstructure implements Subsystem {
 	private boolean m_stateChanged;
 	private boolean m_ampCanSpit;
 	private boolean m_wantsIntaking;
+	private boolean m_wantsEarlyClimb;
 	private boolean m_shootWhileTurningAllowed;
 	private boolean m_wantsFallbackShotRanging;
 	private boolean m_feedingAllowed;
@@ -110,6 +111,7 @@ public final class Superstructure implements Subsystem {
 		m_isStrictlyLocalizing = true;
 		m_ampCanSpit = false;
 		m_wantsIntaking = false;
+		m_wantsEarlyClimb = false;
 		m_shootWhileTurningAllowed = false;
 		m_feedingAllowed = true;
 		m_stateChangedTimer = new Timer();
@@ -177,7 +179,7 @@ public final class Superstructure implements Subsystem {
 			case AMPING -> handleAmping();
 			case CLIMBING -> handleClimbing();
 			case CLIMBING_2 -> handleClimbing_2();
-			case FLAT_PASSING -> handleFlatPass();
+			case FLAT_PASSING -> handlePassing();
 			case PRECLIMB -> handlePreclimb();
 			default -> SystemState.IDLE;
 		};
@@ -307,8 +309,13 @@ public final class Superstructure implements Subsystem {
 	}
 
 	private SystemState handlePreclimb() {
-		Climber.getInstance().setExtended();
 		m_arm.setWantedState(Arm.State.STOWED);
+		if (m_wantsEarlyClimb) {
+			Climber.getInstance().setRetracted();
+		} else {
+			Climber.getInstance().setExtended();
+		}
+
 		return applyWantedState();
 	}
 
@@ -413,18 +420,24 @@ public final class Superstructure implements Subsystem {
 		}
 	}
 
-	private SystemState handleFlatPass() {
-		m_arm.setWantedState(Arm.State.FLAT);
+	private SystemState handlePassing() {
+		if (OI.getInstance().getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
+			m_arm.setWantedState(Arm.State.PASSING);
+		} else {
+			m_arm.setWantedState(Arm.State.FLAT);
+		}
+
 		m_bender.setWantedState(Bender.State.STOWED);
 
 		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
-//			m_shooter.setVelocity(68.0, 68.0);
-			m_shooter.setVelocity(90.0, 90.0);
+			if (OI.getInstance().getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
+				m_shooter.setVelocity(68.0, 68.0);
+			} else {
+				m_shooter.setVelocity(90.0, 90.0);
+			}
 		} else {
 			m_shooter.setOff();
 		}
-
-//		m_arm.setWantedState(Arm.State.PASSING);
 
 		if (m_shooter.isReadyToShoot() && m_feedingAllowed) {
 			m_fintake.clearPiece();
@@ -541,6 +554,10 @@ public final class Superstructure implements Subsystem {
 
 	public void setFeedingAllowed(final boolean feedingAllowed) {
 		m_feedingAllowed = feedingAllowed;
+	}
+
+	public void setWantsEarlyClimb(final boolean earlyClimb) {
+		m_wantsEarlyClimb = false;
 	}
 
 	public void requestFallbackShotRanging() {

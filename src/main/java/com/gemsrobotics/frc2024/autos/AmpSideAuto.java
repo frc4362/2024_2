@@ -1,5 +1,6 @@
 package com.gemsrobotics.frc2024.autos;
 
+import com.gemsrobotics.frc2024.Constants;
 import com.gemsrobotics.frc2024.commands.SetIntakeForcedOutCommand;
 import com.gemsrobotics.frc2024.commands.SetWantedStateCommand;
 import com.gemsrobotics.frc2024.commands.ShootCommand;
@@ -22,13 +23,17 @@ public class AmpSideAuto extends SequentialCommandGroup {
 		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".2", false);
 		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".3", false);
 
+		final double MOVING_SHOT_ADJUSTMENT = 2.5;
+
 		addCommands(
 				new SetIntakeForcedOutCommand(true),
 				pathToFirstShootLocation,
 				new ShootNoteCommand(5.0, false),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(true)),
+				new InstantCommand(() -> Constants.adjustShots(-MOVING_SHOT_ADJUSTMENT)),
 				pathToSecondShootLocation,
 				new ShootCommand(0.45, true, false),
+				new InstantCommand(() -> Constants.adjustShots(MOVING_SHOT_ADJUSTMENT)),
 				new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),
 				new SetIntakeForcedOutCommand(false),

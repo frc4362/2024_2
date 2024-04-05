@@ -140,6 +140,12 @@ public class Climber implements Subsystem {
         }
     }
 
+    public void setShortClimb() {
+        if (Constants.DO_TRAP_CONFIGURATION) {
+            m_climberBreaker.setControl(m_positionVoltageRequest.withPosition(82.0));
+        }
+    }
+
     public void setWantedState(final State state) {
         m_periodicIO.wantedState = state;
     }

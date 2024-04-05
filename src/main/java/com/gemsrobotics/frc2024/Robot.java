@@ -82,7 +82,8 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto());
+		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto123());
+		m_chooser.addOption("Amp-Side Auto 213", new AmpSideAuto213());
 		m_chooser.addOption("Source-Side 43s", new SourceSideAuto2First());
 		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
 //		m_chooser.addOption("Safe Auto", new SafeAuto());

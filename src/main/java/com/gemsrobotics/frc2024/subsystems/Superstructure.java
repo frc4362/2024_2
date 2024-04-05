@@ -308,10 +308,16 @@ public final class Superstructure implements Subsystem {
 		return applyWantedState();
 	}
 
+	private boolean m_lockClimb = false;
 	private SystemState handlePreclimb() {
+//		if (m_stateChanged) {
+//			m_lockClimb = false;
+//		}
+
 		m_arm.setWantedState(Arm.State.STOWED);
-		if (m_wantsEarlyClimb) {
-			Climber.getInstance().setRetracted();
+		if (m_wantsEarlyClimb || m_lockClimb) {
+			Climber.getInstance().setShortClimb();
+			m_lockClimb = true;
 		} else {
 			Climber.getInstance().setExtended();
 		}
@@ -346,7 +352,7 @@ public final class Superstructure implements Subsystem {
 			m_arm.setTrapPose();
 			m_bender.setWantedState(Bender.State.TRAPPING);
 
-			if (m_stateChangedTimer.get() > 0.25 && m_stateChangedTimer.get() > 2.0) {
+			if (m_stateChangedTimer.get() > 2.0) {
 				m_shooter.setVelocity(7.0, 7.0);
 			} else {
 				m_shooter.setOff();
@@ -557,7 +563,7 @@ public final class Superstructure implements Subsystem {
 	}
 
 	public void setWantsEarlyClimb(final boolean earlyClimb) {
-		m_wantsEarlyClimb = false;
+		m_wantsEarlyClimb = earlyClimb;
 	}
 
 	public void requestFallbackShotRanging() {

@@ -1,5 +1,6 @@
 package com.gemsrobotics.frc2024.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -42,9 +43,9 @@ public final class Arm implements Subsystem {
 
     private static final Rotation2d FLIP_ANGLE = Rotation2d.fromRotations(0.5);
     private static final double SHOULDER_MIN = -0.081; // going to assume this is the default position
-    private static final double SHOULDER_MAX = 0.16925;
+    private static final double SHOULDER_MAX = 0.185;
     private static final double ELBOW_MIN = 0;
-    private static final double ELBOW_MAX = 0.33;
+    private static final double ELBOW_MAX = 0.5;
     private static final Rotation2d SHOULDER_DEFAULT = Rotation2d.fromRotations(SHOULDER_MIN);
     private static final Rotation2d SHOOTER_ANGLE_BOTTOM = Rotation2d.fromDegrees(0.0);
 
@@ -72,26 +73,16 @@ public final class Arm implements Subsystem {
         STOWED(SHOULDER_MIN, ELBOW_MIN),
         FLAT(-0.045, 0.0),
         PASSING(SHOULDER_MIN, Rotation2d.fromDegrees(30.0).getRotations()),
-//        AMP(0.0765, 0.14),
-//        AMP(0.075, 0.135),
         AMP(0.076, 0.135),
-        CLIMB_PLACE(1.65, 0.0),
+        CLIMB_PLACE(1.65, 0.394),
 //        CLIMB_PLACE_2(1.65, 0.34),
-        TRAP(0.0, 0.0);
+        TRAP(0.18, 0.394);
 
         public final double shoulderPositionsRotations, elbowPositionRotations;
 
         State(final double shoulder, final double elbow) {
             shoulderPositionsRotations = shoulder;
             elbowPositionRotations = elbow;
-        }
-
-        public double getExactShoulderValue() {
-            return Rotation2d.fromRotations(shoulderPositionsRotations).getRotations();
-        }
-
-        public double getExactElbowValue() {
-            return Rotation2d.fromRotations(elbowPositionRotations).getRotations();
         }
     }
 
@@ -178,19 +169,31 @@ public final class Arm implements Subsystem {
 
     @Override
     public void periodic() {
-        m_periodicIO.shoulderRotation = m_rotationShoulderSignal.refresh().getValue();
-        m_rotationShoulderPublisher.set(m_periodicIO.shoulderRotation);
-        m_periodicIO.currentDrawShoulderAmps = m_currentDrawShoulder.refresh().getValue();
-        m_currentDrawShoulderPublisher.set(m_periodicIO.currentDrawShoulderAmps);
-        m_voltsAppliedShoulderPublisher.set(m_motorVoltageShoulder.refresh().getValue());
-        m_shoulderReferencePublisher.set(m_referenceShoulderSignal.refresh().getValue());
+        BaseStatusSignal.refreshAll(
+                m_rotationShoulderSignal,
+                m_currentDrawShoulder,
+                m_motorVoltageShoulder,
+                m_referenceShoulderSignal,
+                m_rotationElbowSignal,
+                m_currentDrawElbow,
+                m_motorVoltageElbow,
+                m_referenceElbowSignal,
+                m_elbowErrorSignal,
+                m_shoulderErrorSignal);
 
-        m_periodicIO.elbowRotation = m_rotationElbowSignal.refresh().getValue();
+        m_periodicIO.shoulderRotation = m_rotationShoulderSignal.getValue();
+        m_rotationShoulderPublisher.set(m_periodicIO.shoulderRotation);
+        m_periodicIO.currentDrawShoulderAmps = m_currentDrawShoulder.getValue();
+        m_currentDrawShoulderPublisher.set(m_periodicIO.currentDrawShoulderAmps);
+        m_voltsAppliedShoulderPublisher.set(m_motorVoltageShoulder.getValue());
+        m_shoulderReferencePublisher.set(m_referenceShoulderSignal.getValue());
+
+        m_periodicIO.elbowRotation = m_rotationElbowSignal.getValue();
         m_rotationElbowPublisher.set(m_periodicIO.elbowRotation);
-        m_periodicIO.currentDrawElbowAmps = m_currentDrawElbow.refresh().getValue();
+        m_periodicIO.currentDrawElbowAmps = m_currentDrawElbow.getValue();
         m_currentDrawElbowPublisher.set(m_periodicIO.currentDrawElbowAmps);
-        m_voltsAppliedElbowPublisher.set(m_motorVoltageElbow.refresh().getValue());
-        m_elbowReferencePublisher.set(m_referenceElbowSignal.refresh().getValue());
+        m_voltsAppliedElbowPublisher.set(m_motorVoltageElbow.getValue());
+        m_elbowReferencePublisher.set(m_referenceElbowSignal.getValue());
 
         m_fieldToElbowPublisher.set(calculateFieldToElbow().getDegrees());
     }
@@ -203,6 +206,10 @@ public final class Arm implements Subsystem {
     public void setFinalClimb() {
         m_shoulder.setControl(new CoastOut());
         m_elbow.setControl(m_elbowRequest.withPosition(0.0));
+    }
+
+    public void setTrapPose() {
+        setWantedState(State.TRAP);
     }
 
     public void setAngles(final Rotation2d shoulderAngle, final Rotation2d elbowAngle) {
@@ -251,8 +258,8 @@ public final class Arm implements Subsystem {
     }
 
     public boolean atReference(final double toleranceShoulder, final double toleranceElbow) {
-        return MathUtil.isNear(m_elbowErrorSignal.refresh().getValue(), 0.0, toleranceElbow)
-               && MathUtil.isNear(m_shoulderErrorSignal.refresh().getValue(), 0.0, toleranceShoulder);
+        return MathUtil.isNear(m_elbowErrorSignal.getValue(), 0.0, toleranceElbow)
+               && MathUtil.isNear(m_shoulderErrorSignal.getValue(), 0.0, toleranceShoulder);
     }
 
     public boolean atReference(final ShotParam param) {

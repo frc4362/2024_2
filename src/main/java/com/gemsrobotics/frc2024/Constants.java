@@ -12,6 +12,9 @@ import edu.wpi.first.wpilibj.DriverStation;
 import java.util.Optional;
 
 public final class Constants {
+
+	public static final boolean DO_TRAP_CONFIGURATION = true;
+
 	private Constants() {
 	}
 
@@ -30,11 +33,6 @@ public final class Constants {
 		}
 	}
 
-	public static final boolean USE_PREMATCH_LOCALIZATION = false;
-
-	public static final double WINCH_FULLY_EXTENDED = 5.0;
-	public static final double WINCH_FULLY_RETRACTED = 0.0;
-
 	public static final int PILOT_JOYSTICK_PORT = 0;
 	public static final int COPILOT_JOYSTICK_PORT = 1;
 
@@ -50,21 +48,21 @@ public final class Constants {
 			{2.1, 27.25, 120.0},
 			{2.22, 24.8, 120.0},
 			{2.45, 23.5, 120.0},
-			{2.71, 20.8, 120.0},
-			{2.97, 18.0, 120.0},
-			{3.52, 14.75, 120.0},
-			{3.95, 13.75, 120.0},
-			{4.25, 12.5, 120.0},
+			{2.71, 20.4, 120.0},
+			{2.97, 16.7, 120.0},
+			{3.52, 13.8, 120.0},
+			{3.95, 12.8, 120.0},
+			{4.25, 11.8, 120.0},
 			{4.53, 11.1, 120.0},
-			{4.8, 10.3, 120.0},
-			{4.99, 10.05, 120.0},
-			{5.18, 9.7, 120.0},
-			{5.3, 8.9, 120.0},
-			{5.5, 8.7, 120.0},
+			{4.8, 10.75, 120.0},
+			{4.99, 10.25, 120.0},
+			{5.18, 9.65, 120.0},
+			{5.3, 9.1, 120.0},
+			{5.5, 8.8, 120.0},
 			{5.8, 8.5, 120.0},
 	};
 
-	private static double SHOT_FLAT_ADJUSTMENT = 0.5;//2.0;
+	private static double SHOT_FLAT_ADJUSTMENT = 3.5;//2.0;
 
 	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
 	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);

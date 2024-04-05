@@ -36,7 +36,8 @@ public final class Superstructure implements Subsystem {
 		AMPING,
 		CLIMBING,
 		CLIMBING_2,
-		PASSING
+		PASSING,
+		PRECLIMB
 	}
 
 	public enum SystemState {
@@ -47,7 +48,8 @@ public final class Superstructure implements Subsystem {
 		AMPING,
 		CLIMBING,
 		CLIMBING_2,
-		FLAT_PASSING
+		FLAT_PASSING,
+		PRECLIMB
 	}
 
 	private static Superstructure INSTANCE = null;
@@ -176,6 +178,7 @@ public final class Superstructure implements Subsystem {
 			case CLIMBING -> handleClimbing();
 			case CLIMBING_2 -> handleClimbing_2();
 			case FLAT_PASSING -> handleFlatPass();
+			case PRECLIMB -> handlePreclimb();
 			default -> SystemState.IDLE;
 		};
 
@@ -199,6 +202,7 @@ public final class Superstructure implements Subsystem {
 			case CLIMBING -> SystemState.CLIMBING;
 			case CLIMBING_2 -> SystemState.CLIMBING_2;
 			case PASSING -> SystemState.FLAT_PASSING;
+			case PRECLIMB -> SystemState.PRECLIMB;
 		};
 	}
 
@@ -218,30 +222,32 @@ public final class Superstructure implements Subsystem {
 			final var update = visionUpdate.get();
 			final var newPose = update.pose;
 
-			final var distanceFromCurrent = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
-			final var distanceToTarget = m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+//			final var distanceFromCurrent = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+//			final var distanceToTarget = m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
 
-//			if (Math.abs(Math.toRadians(m_periodicIO.turnRate)) > 2.0) {
-//				m_localizationStatePublisher.set("turning too fast");
-//				return LocalizationState.TURNING_TOO_FAST;
-//			}
-
-			// if the new update is close enough to our estimate
-			if ((distanceToTarget < 8.0 || m_isStrictlyLocalizing) && (DriverStation.isTeleop() || distanceFromCurrent < 5.0)) {
-				final var headingStd = m_isStrictlyLocalizing ? 0 : 9_999_999;
-
-				m_drive.addVisionMeasurement(newPose, update.timestampSeconds, VecBuilder.fill(0.3, 0.3, headingStd));
-
-				m_localizationStatePublisher.set(m_isStrictlyLocalizing ? "strictly localized" : "localized");
+			if (m_isStrictlyLocalizing) {
+				final var mt = LimelightHelpers.getBotPoseEstimate_wpiBlue("");
+				m_drive.addVisionMeasurement(mt.pose, mt.timestampSeconds, VecBuilder.fill(.6,.6,0.0));
+				m_localizationStatePublisher.set("strictly localized");
 				return LocalizationState.LOCALIZED;
-//			} else {
-//				m_tooFarVisionReadingCount += 1;
-//				m_localizationStatePublisher.set("rejected on distance");
-//				return LocalizationState.REJECTED_ON_DISTANCE;
-//			}
-			}
+			} else {
+				final double yawRate = m_drive.getPigeon2().getRate();
+				LimelightHelpers.SetRobotOrientation(
+						"",
+						m_drive.getState().Pose.getRotation().getDegrees(),
+						yawRate,
+						0, 0, 0, 0);
 
-			return LocalizationState.REJECTED_ON_DISTANCE;
+				if (Math.abs(yawRate) > 720) {
+					m_localizationStatePublisher.set("turning too fast");
+					return LocalizationState.TURNING_TOO_FAST;
+				}
+
+				m_drive.addVisionMeasurement(update.pose, update.timestampSeconds, VecBuilder.fill(.3,.3,9_999_999));
+
+				m_localizationStatePublisher.set("localized");
+				return LocalizationState.LOCALIZED;
+			}
 		} else {
 			m_localizationStatePublisher.set("no targets detected (no update)");
 			return LocalizationState.NO_TARGET;
@@ -300,11 +306,19 @@ public final class Superstructure implements Subsystem {
 		return applyWantedState();
 	}
 
+	private SystemState handlePreclimb() {
+		Climber.getInstance().setExtended();
+		m_arm.setWantedState(Arm.State.STOWED);
+		return applyWantedState();
+	}
+
 	private SystemState handleClimbing() {
+		m_fintake.setForcedOut(true);
 		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+		Climber.getInstance().setExtended();
 
 		if (m_stateWanted == WantedState.CLIMBING) {
-			m_arm.setWantedState(Arm.State.CLIMB_PLACE);
+			m_arm.setTrapPose();
 		} else {
 			m_arm.setWantedState(Arm.State.STOWED);
 		}
@@ -318,10 +332,31 @@ public final class Superstructure implements Subsystem {
 	}
 
 	private SystemState handleClimbing_2() {
-		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-		m_arm.setFinalClimb();
+		if (Constants.DO_TRAP_CONFIGURATION) {
+			m_fintake.setForcedOut(true);
+			Climber.getInstance().setRetracted();
+			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+			m_arm.setTrapPose();
+			m_bender.setWantedState(Bender.State.TRAPPING);
 
-		return applyWantedState();
+			if (m_stateChangedTimer.get() > 0.25 && m_stateChangedTimer.get() > 2.0) {
+				m_shooter.setVelocity(7.0, 7.0);
+			} else {
+				m_shooter.setOff();
+			}
+
+			if (Climber.getInstance().isRetracted()) {
+				m_fintake.setWantedState(Fintake.WantedState.AMPING);
+			} else {
+				m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+			}
+		} else {
+			m_bender.setWantedState(Bender.State.STOWED);
+			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+			m_arm.setFinalClimb();
+		}
+
+		return SystemState.CLIMBING_2;
 	}
 
 	private SystemState handleExhausting() {
@@ -349,20 +384,11 @@ public final class Superstructure implements Subsystem {
 			m_hasTriedToSpit = false;
 		}
 
-//		if (m_ampCanSpit || m_hasTriedToSpit) {
-//			m_shooter.setSpitting();
-//			m_hasTriedToSpit = true;
-//		} else {
-
 		if (m_stateChangedTimer.get() > 0.25) {
 			m_shooter.setCatchingNote();
 		}
 
-//		if (m_stateChangedTimer.get() > 1.0) {
-			m_fintake.setWantedState(Fintake.WantedState.AMPING);
-//		} else {
-//			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-//		}
+		m_fintake.setWantedState(Fintake.WantedState.AMPING);
 
 		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
 			m_bender.setWantedState(Bender.State.STOWED);
@@ -392,12 +418,13 @@ public final class Superstructure implements Subsystem {
 		m_bender.setWantedState(Bender.State.STOWED);
 
 		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
-			m_shooter.setVelocity(68.0, 68.0);
+//			m_shooter.setVelocity(68.0, 68.0);
+			m_shooter.setVelocity(90.0, 90.0);
 		} else {
 			m_shooter.setOff();
 		}
 
-		m_arm.setWantedState(Arm.State.PASSING);
+//		m_arm.setWantedState(Arm.State.PASSING);
 
 		if (m_shooter.isReadyToShoot() && m_feedingAllowed) {
 			m_fintake.clearPiece();

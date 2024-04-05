@@ -1,5 +1,6 @@
 package com.gemsrobotics.frc2024.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
@@ -33,7 +34,7 @@ public class Fintake implements Subsystem {
 	private static final double kV = 0.12 / 1.7;
 	private static final double kG = -0.42; // volts
 
-	private static final double INTAKE_SHOT_PROTECTION_SECONDS = 0.5;
+	private static final double INTAKE_SHOT_PROTECTION_SECONDS = 0.6;
 
 	private static final double ROLLER_RADIUS = Units.inches2Meters(1.25) / 2.0;
 	public static final double INTAKE_STARTING_ROTATIONS = -0.22;
@@ -98,6 +99,8 @@ public class Fintake implements Subsystem {
 	private final PeriodicIO m_periodicIO;
 //	private final MotionMagicExpoVoltage m_deployerRequest;
 	private final PositionVoltage m_deployerRequest;
+	private final StaticBrake m_brakeRequest;
+	private final VoltageOut m_deployerStallRequest;
 	private boolean m_forcedOut;
 
 	private final Timer m_noteGetTimer;
@@ -173,6 +176,8 @@ public class Fintake implements Subsystem {
 		m_feederVoltsRequest.EnableFOC = true;
 		m_deployerRequest = new PositionVoltage(INTAKE_STARTING_ROTATIONS);
 		m_deployerRequest.EnableFOC = true;
+		m_brakeRequest = new StaticBrake();
+		m_deployerStallRequest = new VoltageOut(-2.0);
 
 		m_forcedOut = false;
 		m_feederCurrentFilter = LinearFilter.movingAverage(1);
@@ -196,19 +201,28 @@ public class Fintake implements Subsystem {
 			m_noteGetTimer.reset();
 		}
 
-		m_periodicIO.intakeCurrentDrawAmps = m_intakeDrawAmpsSignal.refresh().getValue();
+		BaseStatusSignal.refreshAll(
+				m_intakeDrawAmpsSignal,
+				m_feederDrawAmpsSignal,
+				m_feederPositionSignal,
+				m_deployerPositionSignal,
+				m_deployerVoltsApplied,
+				m_deployerReference
+		);
+
+		m_periodicIO.intakeCurrentDrawAmps = m_intakeDrawAmpsSignal.getValue();
 		m_intakeCurrentPublisher.set(m_periodicIO.intakeCurrentDrawAmps);
 
-		final double newFeederCurrent = m_feederDrawAmpsSignal.refresh().getValue();
+		final double newFeederCurrent = m_feederDrawAmpsSignal.getValue();
 		m_periodicIO.feederCurrentDrawAmps = m_feederCurrentFilter.calculate(newFeederCurrent);
 		m_feederCurrentPublisher.set(m_periodicIO.feederCurrentDrawAmps);
-		m_periodicIO.feederPosition = m_feederPositionSignal.refresh().getValue();
+		m_periodicIO.feederPosition = m_feederPositionSignal.getValue();
 
-		m_periodicIO.deployerPosition = m_deployerPositionSignal.refresh().getValue();
+		m_periodicIO.deployerPosition = m_deployerPositionSignal.getValue();
 		m_deployerPositionPublisher.set(m_periodicIO.deployerPosition);
-		m_periodicIO.deployerVoltsApplied = m_deployerVoltsApplied.refresh().getValue();
+		m_periodicIO.deployerVoltsApplied = m_deployerVoltsApplied.getValue();
 		m_deployerVoltsPublisher.set(m_periodicIO.deployerVoltsApplied);
-		m_periodicIO.deployerReference = m_deployerReference.refresh().getValue();
+		m_periodicIO.deployerReference = m_deployerReference.getValue();
 		m_deployerReferencePublisher.set(m_periodicIO.deployerReference);
 
 		State newState = State.EMPTY;
@@ -335,7 +349,7 @@ public class Fintake implements Subsystem {
 			}
 		} else {
 			if (m_periodicIO.state == State.HOLDING) {
-				m_feeder.setControl(new StaticBrake());
+				m_feeder.setControl(m_brakeRequest);
 			} else {
 				m_feeder.setControl(m_feederVoltsRequest);
 			}
@@ -346,7 +360,7 @@ public class Fintake implements Subsystem {
 		}
 
 		if (m_stallIntakeBack) {
-			m_deployer.setControl(new VoltageOut(-2.0));
+			m_deployer.setControl(m_deployerStallRequest);
 		} else {
 			m_deployer.setControl(m_deployerRequest);
 		}

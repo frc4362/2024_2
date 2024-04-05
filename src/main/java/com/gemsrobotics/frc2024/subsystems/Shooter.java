@@ -1,5 +1,6 @@
 package com.gemsrobotics.frc2024.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
@@ -56,7 +57,9 @@ public final class Shooter implements Subsystem {
 	private final MedianFilter m_velocityFilterLeft;
 	private final MedianFilter m_velocityFilterRight;
 	private final LinearFilter m_currentFilter;
+	private final BaseStatusSignal[] m_baseSignals;
 	private boolean m_doIdling;
+	private final TorqueCurrentFOC m_idleRequest;
 
 	public enum State {
 		OFF,
@@ -93,6 +96,8 @@ public final class Shooter implements Subsystem {
 		m_positionRequest = new PositionVoltage(0.0);
 		m_positionRequest.EnableFOC = true;
 		m_positionRequest.Slot = 1;
+
+		m_idleRequest = new TorqueCurrentFOC(20);
 
 		m_followRequest = new Follower(m_wheelLeft.getDeviceID(), false);
 
@@ -165,23 +170,35 @@ public final class Shooter implements Subsystem {
 		m_voltageRightPublisher = myTable.getDoubleTopic("voltage_right").publish();
 		m_noteCaughtPublisher = myTable.getBooleanTopic("note_caught").publish();
 		m_statePublisher = myTable.getStringTopic("state").publish();
+
+		m_baseSignals = new BaseStatusSignal[] {
+			m_velocityLeftSignal,
+			m_velocityRightSignal,
+			m_currentDrawLeft,
+		    m_currentDrawRight,
+		    m_voltageLeft,
+		    m_voltageRight,
+			m_positionLeft
+		};
 	}
 
 	private boolean accelerated = false;
 
 	@Override
 	public void periodic() {
+		BaseStatusSignal.refreshAll(m_baseSignals);
+
 		// telemetry
-		final double leftVelocityRPS = m_velocityLeftSignal.refresh().getValue();
-		final double rightVelocityRPS = m_velocityRightSignal.refresh().getValue();
+		final double leftVelocityRPS = m_velocityLeftSignal.getValue();
+		final double rightVelocityRPS = m_velocityRightSignal.getValue();
 		m_periodicIO.filteredVelocityLeftRPS = m_velocityFilterLeft.calculate(leftVelocityRPS);
 		m_periodicIO.filteredVelocityRightRPS = m_velocityFilterRight.calculate(rightVelocityRPS);
 
-		m_currentLeftPublisher.set(m_currentDrawLeft.refresh().getValue());
-		m_currentRightPublisher.set(m_currentDrawRight.refresh().getValue());
+		m_currentLeftPublisher.set(m_currentDrawLeft.getValue());
+		m_currentRightPublisher.set(m_currentDrawRight.getValue());
 
-		m_voltageLeftPublisher.set(m_voltageLeft.refresh().getValue());
-		m_voltageRightPublisher.set(m_voltageRight.refresh().getValue());
+		m_voltageLeftPublisher.set(m_voltageLeft.getValue());
+		m_voltageRightPublisher.set(m_voltageRight.getValue());
 
 		m_velocityMeasuredLeftPublisher.set(m_periodicIO.filteredVelocityLeftRPS);
 		m_velocityMeasuredRightPublisher.set(m_periodicIO.filteredVelocityRightRPS);
@@ -200,8 +217,8 @@ public final class Shooter implements Subsystem {
 				m_periodicIO.isNoteCaught = false;
 
 				if (DriverStation.isAutonomousEnabled() && m_doIdling) {
-					m_wheelLeft.setControl(new TorqueCurrentFOC(20));
-					m_wheelRight.setControl(new TorqueCurrentFOC(20));
+					m_wheelLeft.setControl(m_idleRequest);
+					m_wheelRight.setControl(m_idleRequest);
 				} else {
 					m_wheelLeft.setControl(m_neutralRequest);
 					m_wheelRight.setControl(m_neutralRequest);
@@ -220,15 +237,6 @@ public final class Shooter implements Subsystem {
 				} else {
 					m_wheelLeft.setControl(m_velocityRequest.withVelocity(5));
 					m_wheelRight.setControl(m_velocityRequest.withVelocity(5));
-
-//					if (currentNow < 12 && m_periodicIO.filteredVelocityLeftRPS > 2.0 && !accelerated) {
-//						accelerated = true;
-//					}
-//
-//					if ((currentNow > 20 && accelerated) || currentNow > 45.0) {
-//						m_periodicIO.isNoteCaught = true;
-//						m_periodicIO.catchNoteGoal = m_positionLeft.refresh().getValue() + 1.0; // plus 1.5 rotations = 9 inches of motion
-//					}
 				}
 
 				break;
@@ -252,7 +260,7 @@ public final class Shooter implements Subsystem {
 	}
 
 	public boolean isNoteHalfOutOrMore() {
-		final var p = m_positionLeft.refresh().getValue();
+		final var p = m_positionLeft.getValue();
 		return isNear(p, m_periodicIO.catchNoteGoal, 0.25) || p > m_periodicIO.catchNoteGoal;
 	}
 
@@ -294,7 +302,7 @@ public final class Shooter implements Subsystem {
 	public void setSpitting() {
 		if (m_periodicIO.state != State.SPITTING_NOTE) {
 			m_periodicIO.state = State.SPITTING_NOTE;
-			m_spitRequest.Position = m_positionLeft.refresh().getValue() + 10.0;
+			m_spitRequest.Position = m_positionLeft.getValue() + 10.0;
 		}
 	}
 

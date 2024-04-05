@@ -1,5 +1,6 @@
 package com.gemsrobotics.frc2024.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
@@ -46,7 +47,8 @@ public class Bender implements Subsystem {
     public enum State {
         STOWED(0.0),
         AMPING(3.57),
-        DEPLOYED(14.75),
+        TRAPPING(5.7),
+        DEPLOYED(19.0),
         WIGGLING(14.75); // used to be 16.5
 
         public double rotations;
@@ -95,9 +97,11 @@ public class Bender implements Subsystem {
 
     @Override
     public void periodic() {
-        m_periodicIO.rotationBenderRotations = m_rotationBenderSignal.refresh().getValue();
+        BaseStatusSignal.refreshAll(m_rotationBenderSignal, m_currentDrawBender);
+
+        m_periodicIO.rotationBenderRotations = m_rotationBenderSignal.getValue();
         m_rotationBenderPublisher.set(m_periodicIO.rotationBenderRotations);
-        m_periodicIO.currentDrawBenderAmps = m_currentDrawBender.refresh().getValue();
+        m_periodicIO.currentDrawBenderAmps = m_currentDrawBender.getValue();
         m_currentDrawBenderPublisher.set(m_periodicIO.currentDrawBenderAmps);
 
 //        m_bender.setControl(new NeutralOut());

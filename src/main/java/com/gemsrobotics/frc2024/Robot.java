@@ -29,6 +29,7 @@ public class Robot extends TimedRobot {
 	private Arm m_arm;
 	private Climber m_climber;
 	private LEDManager m_leds;
+	private PowerDistribution m_pdh;
 
 	private StringPublisher m_translationPublisher;
 	private DoublePublisher m_rotationPublisher;
@@ -49,6 +50,7 @@ public class Robot extends TimedRobot {
 		m_arm = Arm.getInstance();
 		m_climber = Climber.getInstance();
 		m_leds = LEDManager.getInstance();
+		m_pdh = new PowerDistribution();
 
 		m_oi = OI.getInstance();
 
@@ -81,7 +83,7 @@ public class Robot extends TimedRobot {
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
 		m_chooser.addOption("Amp-Side Auto", new AmpSideAuto());
-//		m_chooser.addOption("Source-Side Auto 2 First", new SourceSideAuto2First());
+		m_chooser.addOption("Source-Side 43s", new SourceSideAuto2First());
 		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
 //		m_chooser.addOption("Safe Auto", new SafeAuto());
 //		m_chooser.addOption("Trespass Auto", new TrespassAuto());
@@ -104,7 +106,7 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void disabledInit() {
-		m_drive.setBraking();
+//		m_drive.setBraking();
 	}
 
 	@Override
@@ -116,6 +118,7 @@ public class Robot extends TimedRobot {
 		CommandScheduler.getInstance().run();
 		SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
 		SmartDashboard.putBoolean("holding note", m_fintake.isHoldingPiece());
+		SmartDashboard.putNumber("total current", m_pdh.getTotalCurrent());
 	}
 
 	@Override
@@ -189,9 +192,9 @@ public class Robot extends TimedRobot {
 					true,
 					m_oi.getWantsEvasion());
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
-					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
-					 && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
-					 && !m_oi.getCopilot().getXButton()
+						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
+						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
+						   && !m_oi.getCopilot().getXButton()
 		) {
 			m_drive.setAimingAtGoal(m_oi.getWantedSwerveTranslation());
 		} else if (m_oi.getWantsNoteChase()) {
@@ -232,14 +235,18 @@ public class Robot extends TimedRobot {
 		m_superstructure.setFeedingAllowed(m_oi.getPilot().getRightTriggerAxis() > 0.5);
 		if (wantsAmp && wantsAmpSpit) {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);
-		} else if (wantsPass) {
+		} else if (wantsPass && m_oi.getPilot().getRightTriggerAxis() > 0.5) {
 			m_superstructure.setWantedState(Superstructure.WantedState.PASSING);
-		} else if (wantsClimb2) {
+		} else if (wantsClimb2 && m_oi.getCopilot().getLeftTriggerAxis() > 0.5) {
+			// finish the job.........
 			m_superstructure.setWantedState(Superstructure.WantedState.CLIMBING_2);
 			m_climber.setVoltsProtected(10 * m_oi.getCopilot().getLeftTriggerAxis());
-		} else if (wantsClimb1) {
+		} else if (wantsClimb2) {
 			m_superstructure.setWantedState(Superstructure.WantedState.CLIMBING);
-			m_climber.setVolts(0.0);
+			m_climber.setVoltsProtected(10 * m_oi.getCopilot().getLeftTriggerAxis());
+		} else if (wantsClimb1) {
+			m_superstructure.setWantedState(Superstructure.WantedState.PRECLIMB);
+			m_climber.setVoltsProtected(0.0);
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5) {
 			m_superstructure.setWantedState(Superstructure.WantedState.SHOOTING);
 		} else if (wantsIntaking) {

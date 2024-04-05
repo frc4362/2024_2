@@ -50,7 +50,7 @@ public class SwerveConstantsProd implements SwerveConstants {
 
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
-    private static final double kSlipCurrentA = 150.0;
+    private static final double kSlipCurrentA = 105.0;
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
@@ -59,7 +59,7 @@ public class SwerveConstantsProd implements SwerveConstants {
     // Theoretical free speed (m/s) at 12v applied output;
     // This needs to be tuned to your individual robot
 //    public static final double kSpeedAt12VoltsMps = 7.145; // analytically derived below
-    public static final double kSpeedAt12VoltsMps = kKrakenRadiansPerSecond / kDriveGearRatio * Units.inchesToMeters(kWheelRadiusInches);
+    public static final double kSpeedAt12VoltsMps = 6.5;//kKrakenRadiansPerSecond / kDriveGearRatio * Units.inchesToMeters(kWheelRadiusInches);
 
     private static final boolean kSteerMotorReversed = true;
     private static final boolean kInvertLeftSide = false;

@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import com.choreo.lib.Choreo;
 import com.choreo.lib.ChoreoControlFunction;
 import com.choreo.lib.ChoreoTrajectoryState;
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
@@ -46,6 +47,8 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
+import static java.lang.Math.abs;
+
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements subsystem
  * so it can be used in command-based projects easily.
@@ -75,7 +78,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
 
     // open loop constants
     private static final Rotation2d FLIP_ANGLE = Rotation2d.fromDegrees(180);
-    private static final double DEADBAND = 0.15;
+    private static final double DEADBAND = 0.025;
 
     // provide some complex measurements to outside classes
     private final SwerveObserver m_telemetry;
@@ -92,6 +95,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     private final DoublePublisher m_velocityErrorPublisher;
     private final DoublePublisher m_angleToSpeaker;
     private final List<StatusSignal<Double>> m_voltageSignals, m_torqueSignals;
+    private BaseStatusSignal[] m_baseSignals;
     private AllianceConstants m_allianceConstants;
 	private Optional<Rotation2d> m_maintainHeadingGoal;
 
@@ -197,7 +201,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
             driveCurrentLimits.SupplyCurrentLimitEnable = true;
             driveCurrentLimits.SupplyCurrentThreshold = 120;
             driveCurrentLimits.StatorCurrentLimitEnable = true;
-            driveCurrentLimits.StatorCurrentLimit = 90;
+            driveCurrentLimits.StatorCurrentLimit = 92.5;
             driveTalonFXConfigurator.apply(driveCurrentLimits);
 
             m_voltageSignals.add(module.getDriveMotor().getMotorVoltage());
@@ -207,6 +211,17 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         configNeutralMode(NeutralModeValue.Brake);
 
         m_angleToSpeaker = myTable.getDoubleTopic("shooter_to_speaker_degrees").publish();
+
+        m_baseSignals = new BaseStatusSignal[] {
+                m_voltageSignals.get(0),
+                m_voltageSignals.get(1),
+                m_voltageSignals.get(2),
+                m_voltageSignals.get(3),
+                m_torqueSignals.get(0),
+                m_torqueSignals.get(1),
+                m_torqueSignals.get(2),
+                m_torqueSignals.get(3)
+        };
 
         m_allianceConstants = Constants.ALLIANCE_CONSTANTS_DEFAULT;
 		m_maintainHeadingGoal = Optional.empty();
@@ -229,13 +244,15 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(m_baseSignals);
+
         m_angleToSpeaker.set(getAimingError().getDegrees());
         for (int i = 0; i < m_voltagePublishers.size(); i++) {
-            m_voltagePublishers.get(i).set(m_voltageSignals.get(i).refresh().getValue());
+            m_voltagePublishers.get(i).set(m_voltageSignals.get(i).getValue());
         }
 
         for (int i = 0; i < m_torquePublishers.size(); i++) {
-            m_torquePublishers.get(i).set(m_torqueSignals.get(i).refresh().getValue());
+            m_torquePublishers.get(i).set(m_torqueSignals.get(i).getValue());
         }
     }
 
@@ -258,7 +275,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         var direction = new Rotation2dPlus(fieldTranslationVector.getAngle());
         if (doAxisLock) {
             final var nearestPole = direction.getNearestPole();
-            if (Math.abs(direction.minus(nearestPole).getDegrees()) < 5) {
+            if (abs(direction.minus(nearestPole).getDegrees()) < 5) {
                 direction = nearestPole;
             }
         }
@@ -314,7 +331,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         setControl(m_teleopRequest);
     }
 
-    private static final double kP = -3.0;
+    private static final double kP = 4.0;
     public void setOpenLoopNoteChasing(
             final Translation2d joystickTranslation,
             final double joystickRotationRate
@@ -331,16 +348,25 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         final Rotation2d vehicleToNote = vehicleToNoteRotation.get();
         final var correction = kP * vehicleToNote.getRadians();
         final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation, false);
-        final var pointedTranslation = new Translation2d(scaledTranslation.getNorm(), fieldToVehicleRotation.plus(vehicleToNote));
 
-        m_maintainHeadingGoal = Optional.empty();
+        // difference between the way the robot is facing and the way the robot is moving
+        final var movementDirectionRobotRelative = scaledTranslation.getAngle().minus(getState().Pose.getRotation());
+        // if you're moving within the 90 degrees facing the note
+        if (abs(movementDirectionRobotRelative.minus(vehicleToNote).getDegrees()) < 45.0) {
+            final var pointedTranslation = new Translation2d(scaledTranslation.getNorm(), fieldToVehicleRotation.plus(vehicleToNote));
 
-        m_teleopRequest.VelocityX = pointedTranslation.getX();
-        m_teleopRequest.VelocityY = pointedTranslation.getY();
-        m_teleopRequest.Evading = false;
-        m_teleopRequest.RotationalRate = correction;
+            m_maintainHeadingGoal = Optional.empty();
 
-        setControl(m_teleopRequest);
+            m_teleopRequest.VelocityX = pointedTranslation.getX();
+            m_teleopRequest.VelocityY = pointedTranslation.getY();
+            m_teleopRequest.Evading = false;
+            m_teleopRequest.RotationalRate = correction;
+
+            setControl(m_teleopRequest);
+            // otherwise be normal
+        } else {
+            setOpenLoopJoysticks(joystickTranslation, joystickRotationRate, false, false);
+        }
     }
 
 	public void setOpenLoopFaceHeadingJoysticks(final Translation2d joystickTranslation, final Rotation2d heading) {

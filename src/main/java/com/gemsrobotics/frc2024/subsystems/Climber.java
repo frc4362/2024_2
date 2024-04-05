@@ -30,11 +30,11 @@ public class Climber implements Subsystem {
         return INSTANCE;
     }
 
-    private final TalonFX m_climberBreaker, m_climberRio;
+    private final TalonFX m_climberBreaker;//, m_climberRio;
     private final PeriodicIO m_periodicIO;
 
     private final StatusSignal<Double>
-            m_rotationClimberBreakerSignal, m_currentDrawClimberBreaker, m_rotationClimberRioSignal, m_currentDrawClimberRioSignal;
+            m_rotationClimberBreakerSignal, m_currentDrawClimberBreaker;//, m_rotationClimberRioSignal, m_currentDrawClimberRioSignal;
     private final DoublePublisher
             m_rotationClimberLeftPublisher, m_currentDrawClimberLeftPublisher, m_rotationClimberRightPublisher, m_currentDrawClimberRightPublisher;
 
@@ -52,28 +52,34 @@ public class Climber implements Subsystem {
     }
 
     private NeutralOut m_neutralOut;
-    private PositionVoltage m_retractedPositionVoltage;
+    private PositionVoltage m_positionVoltageRequest;
     private Follower m_followerRequest;
+    private VoltageOut m_climberVoltsRequest;
 
     private Climber() {
         m_climberBreaker = new TalonFX(17, Constants.AUX_BUS_NAME);
-        m_climberRio = new TalonFX(16, Constants.AUX_BUS_NAME);
+//        m_climberRio = new TalonFX(16, Constants.AUX_BUS_NAME);
 
         m_periodicIO = new PeriodicIO();
 
         final var climberConfig = new TalonFXConfiguration();
         climberConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         climberConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        climberConfig.MotorOutput.PeakForwardDutyCycle = 1.0;
+        climberConfig.MotorOutput.PeakReverseDutyCycle = 0.0;
         climberConfig.Feedback.RotorToSensorRatio = 1.0;
         climberConfig.Feedback.SensorToMechanismRatio = 1.0;
+        climberConfig.Slot0.kP = 100.0 / 12.0; // 12V for the full movement
+        climberConfig.Slot0.kI = 0.0;
+        climberConfig.Slot0.kD = 0.0;
         TalonUtils.configureTalon(climberConfig, m_climberBreaker);
-        TalonUtils.configureTalon(climberConfig, m_climberRio);
+//        TalonUtils.configureTalon(climberConfig, m_climberRio);
 
         // grab status signals to monitor velocity (RPS) and torque current (A)
         m_rotationClimberBreakerSignal = m_climberBreaker.getPosition();
         m_currentDrawClimberBreaker = m_climberBreaker.getTorqueCurrent();
-        m_rotationClimberRioSignal = m_climberRio.getPosition();
-        m_currentDrawClimberRioSignal = m_climberRio.getTorqueCurrent();
+//        m_rotationClimberRioSignal = m_climberRio.getPosition();
+//        m_currentDrawClimberRioSignal = m_climberRio.getTorqueCurrent();
 
         // configure logging of velocity (RPS) and torque current (A)
         final NetworkTable myTable = NetworkTableInstance.getDefault().getTable(NT_KEY);
@@ -82,11 +88,12 @@ public class Climber implements Subsystem {
         m_rotationClimberRightPublisher = myTable.getDoubleTopic("rotation_climber_right_rotations").publish();
         m_currentDrawClimberRightPublisher = myTable.getDoubleTopic("current_climber_right_amps").publish();
 
+        m_climberVoltsRequest = new VoltageOut(0.0);
         m_neutralOut = new NeutralOut();
         m_followerRequest = new Follower(m_climberBreaker.getDeviceID(), true);
-        m_retractedPositionVoltage = new PositionVoltage(0); //TODO: fix these
-        m_retractedPositionVoltage.Position = 0; //TODO: fix these
-        m_retractedPositionVoltage.EnableFOC = true;
+        m_positionVoltageRequest = new PositionVoltage(0); //TODO: fix these
+        m_positionVoltageRequest.Position = 0; //TODO: fix these
+        m_positionVoltageRequest.EnableFOC = true;
     }
 
     @Override
@@ -97,11 +104,13 @@ public class Climber implements Subsystem {
 //            m_climberBreaker.setControl(m_retractedPositionVoltage);
 //        }
 //        m_climberBreaker.setControl(m_neutralOut);
-        m_climberRio.setControl(m_followerRequest);
+//        m_climberRio.setControl(m_followerRequest);
     }
 
-    public void setVolts(final double volts) {
-        m_climberBreaker.setControl(new VoltageOut(volts).withEnableFOC(true));
+    private void setVolts(final double volts) {
+        if (!Constants.DO_TRAP_CONFIGURATION) {
+            m_climberBreaker.setControl(m_climberVoltsRequest.withOutput(volts).withEnableFOC(true));
+        }
     }
 
     private static final double ARM_POSITION_STOP = -0.06;
@@ -112,6 +121,22 @@ public class Climber implements Subsystem {
             setVolts(0.0);
         } else {
             setVolts(voltsAttempt);
+        }
+    }
+
+    public boolean isRetracted() {
+        return m_climberBreaker.getPosition().getValue() > 103.0;
+    }
+
+    public void setExtended() {
+        if (Constants.DO_TRAP_CONFIGURATION) {
+            m_climberBreaker.setControl(m_positionVoltageRequest.withPosition(52.0));
+        }
+    }
+
+    public void setRetracted() {
+        if (Constants.DO_TRAP_CONFIGURATION) {
+            m_climberBreaker.setControl(m_positionVoltageRequest.withPosition(106.0));
         }
     }
 

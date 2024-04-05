@@ -51,8 +51,7 @@ public class NewTargetServer implements Subsystem {
 			return;
 		}
 
-		// TODO figure this out later, frame of reference may not be the same as choreo
-		final var newEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_name);
+		final var newEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(m_name);
 
 		if (newEstimate.tagCount < 2) {
 			m_statePublisher.set("not enough tags");

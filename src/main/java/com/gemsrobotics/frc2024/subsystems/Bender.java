@@ -46,7 +46,7 @@ public class Bender implements Subsystem {
 
     public enum State {
         STOWED(0.0),
-        AMPING(3.57),
+        AMPING(3.57), // was 2.2 for a bit
         TRAPPING(5.7),
         DEPLOYED(19.0),
         WIGGLING(14.75); // used to be 16.5

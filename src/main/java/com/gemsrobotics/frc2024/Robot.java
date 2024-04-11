@@ -42,7 +42,7 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() {
 		m_superstructure = Superstructure.getInstance();
-		m_superstructure.setStrictLocalizationEnabled(true);
+		m_superstructure.setStrictLocalizationEnabled(false);
 		m_drive = Swerve.getInstance();
 		m_shooter = Shooter.getInstance();
 		m_fintake = Fintake.getInstance();
@@ -82,10 +82,15 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
+		m_chooser.addOption("Pick this auto to race Jackets", new SourceSideAutoRace());
 		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto123());
 		m_chooser.addOption("Amp-Side Auto 213", new AmpSideAuto213());
-		m_chooser.addOption("Source-Side 43s", new SourceSideAuto2First());
 		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
+		m_chooser.addOption("Source-Side 532", new SourceSideAuto134());
+		m_chooser.addOption("Source-Side 435", new Source435());
+		m_chooser.addOption("Source-Side 345", new Source345());
+		m_chooser.addOption("Source-Side 432", new Source432());
+		m_chooser.addOption("Source-Side 534", new SourceSideAuto534());
 //		m_chooser.addOption("Safe Auto", new SafeAuto());
 //		m_chooser.addOption("Trespass Auto", new TrespassAuto());
 //		m_chooser.addOption("Center Auto", new CenterAuto());

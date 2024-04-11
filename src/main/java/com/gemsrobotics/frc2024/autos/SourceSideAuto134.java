@@ -10,20 +10,20 @@ import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
-public class SourceSideAuto1First extends SequentialCommandGroup {
+public class SourceSideAuto134 extends SequentialCommandGroup {
 	private static final String AUTO_NAME = "Source 123";
-	public SourceSideAuto1First() {
+	public SourceSideAuto134() {
 		final var drive = Swerve.getInstance();
 		final var driveToFirstShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".1", true);
 		final var driveToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
-		final var driveTo2ndShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".1", false);
-		final var driveTo3rdShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2"+ ".2", false);
-		final var driveTo4thShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".3", false);
-		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".4", false);
+		final var driveTo2ndShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 3" + ".1", false);
+		final var driveTo3rdShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 3"+ ".2", false);
+		final var driveTo4thShot = drive.getTrackTrajectoryCommand(AUTO_NAME + " 3" + ".3", false);
+		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + " 3" + ".4", false);
 
 		addCommands(
 				drive.resetOdometryOnTrajectory(AUTO_NAME + " 1" + ".1"),
-				new ShootNoteCommand(3.0, true),
+				new ShootNoteCommand(2.0, true),
 				new SetIntakeForcedOutCommand(true),
 				new ParallelDeadlineGroup(
 						new SequentialCommandGroup(

@@ -216,6 +216,12 @@ public final class Superstructure implements Subsystem {
 	}
 
 	private LocalizationState updateLocalization() {
+		LimelightHelpers.SetRobotOrientation(
+				"",
+				m_drive.getState().Pose.getRotation().getDegrees(),
+				0.0,
+				0, 0, 0, 0);
+
 		// supply vision measurements to robot
 		// coordinate subsystems
 		// act on state
@@ -229,16 +235,17 @@ public final class Superstructure implements Subsystem {
 
 			if (m_isStrictlyLocalizing) {
 				final var mt = LimelightHelpers.getBotPoseEstimate_wpiBlue("");
+
+				if (mt.pose.getTranslation().getNorm() == 0.0) {
+					m_localizationStatePublisher.set("no targets detected (no update)");
+					return LocalizationState.NO_TARGET;
+				}
+
 				m_drive.addVisionMeasurement(mt.pose, mt.timestampSeconds, VecBuilder.fill(.6,.6,0.0));
 				m_localizationStatePublisher.set("strictly localized");
 				return LocalizationState.LOCALIZED;
 			} else {
 				final double yawRate = m_drive.getPigeon2().getRate();
-				LimelightHelpers.SetRobotOrientation(
-						"",
-						m_drive.getState().Pose.getRotation().getDegrees(),
-						yawRate,
-						0, 0, 0, 0);
 
 				if (Math.abs(yawRate) > 720) {
 					m_localizationStatePublisher.set("turning too fast");

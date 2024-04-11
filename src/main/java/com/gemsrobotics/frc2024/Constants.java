@@ -54,15 +54,15 @@ public final class Constants {
 			{3.95, 13.75, 120.0},
 			{4.25, 12.5, 120.0},
 			{4.53, 11.1, 120.0},
-			{4.8, 9.8, 120.0},
-			{4.99, 9.25, 120.0},
-			{5.18, 9.0, 120.0},
-			{5.3, 8.7, 120.0},
-			{5.5, 8.5, 120.0},
+			{4.8, 9.9, 120.0},
+			{4.99, 9.5, 120.0},
+			{5.18, 9.25, 120.0},
+			{5.3, 8.9, 120.0},
+			{5.5, 8.7, 120.0},
 			{5.8, 8.5, 120.0},
 	};
 
-	private static double SHOT_FLAT_ADJUSTMENT = 3.5;//2.0;
+	private static double SHOT_FLAT_ADJUSTMENT = 2.75;//2.0;
 
 	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
 	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);

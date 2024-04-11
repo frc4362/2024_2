@@ -73,7 +73,7 @@ public final class Arm implements Subsystem {
         STOWED(SHOULDER_MIN, ELBOW_MIN),
         FLAT(-0.045, 0.0),
         PASSING(SHOULDER_MIN, Rotation2d.fromDegrees(30.0).getRotations()),
-        AMP(0.076, 0.135),
+        AMP(0.076, 0.135 + (0.011 * 2.0)), // idk this adds like 4 degrees lmfao
         CLIMB_PLACE(1.65, 0.394),
 //        CLIMB_PLACE_2(1.65, 0.34),
         TRAP(0.18, 0.394);

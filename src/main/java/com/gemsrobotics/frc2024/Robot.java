@@ -42,7 +42,7 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() {
 		m_superstructure = Superstructure.getInstance();
-		m_superstructure.setStrictLocalizationEnabled(false);
+		m_superstructure.setStrictLocalizationEnabled(true);
 		m_drive = Swerve.getInstance();
 		m_shooter = Shooter.getInstance();
 		m_fintake = Fintake.getInstance();
@@ -83,6 +83,8 @@ public class Robot extends TimedRobot {
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
 		m_chooser.addOption("Pick this auto to race Jackets", new SourceSideAutoRace());
+//		m_chooser.addOption("Worlds race", new NutronsRace());
+//		m_chooser.addOption("Worlds NO RACE", new WorldsNoRace());
 		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto123());
 		m_chooser.addOption("Amp-Side Auto 213", new AmpSideAuto213());
 		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
@@ -193,11 +195,20 @@ public class Robot extends TimedRobot {
 					m_oi.getWantedSwerveTranslation(),
 					Rotation2d.fromDegrees(-90));
 		} else if (wantsPass) {
-			m_drive.setOpenLoopJoysticks(
-					m_oi.getWantedSwerveTranslation(),
-					m_oi.getWantedSwerveRotation(),
-					true,
-					m_oi.getWantsEvasion());
+			if (m_oi.getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
+				final Rotation2d feedHeading = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red
+													   ? Rotation2d.fromRadians(-2.66) : Rotation2d.fromRadians(-0.5);
+//													   ? Rotation2d.fromRadians(-2.59) : Rotation2d.fromRadians(-0.57);
+				m_drive.setOpenLoopFaceHeadingJoysticks(
+						m_oi.getWantedSwerveTranslation(),
+						feedHeading);
+			} else {
+				m_drive.setOpenLoopJoysticks(
+						m_oi.getWantedSwerveTranslation(),
+						m_oi.getWantedSwerveRotation(),
+						true,
+						m_oi.getWantsEvasion());
+			}
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
@@ -222,7 +233,7 @@ public class Robot extends TimedRobot {
 			Constants.adjustShots(-0.5);
 		}
 
-		Bender.getInstance().setDoSlam(m_oi.getCopilot().getAButton());
+		Bender.getInstance().setDoSlam(m_oi.getCopilot().getAButton() || m_oi.getPilot().getAButton());
 		Bender.getInstance().setDoRelease(m_oi.getCopilot().getBButton());
 		Superstructure.getInstance().setWantsEarlyClimb(m_oi.getCopilot().getRightTriggerAxis() > 0.5);
 

@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class Superstructure implements Subsystem {
+	private static final boolean DO_FAST_TRAP = true;
 	private static final boolean USE_DASHBOARD_SHOOTING = false;
 	private static final String GOAL_DISTANCE_KEY = "goal_distance";
 	private static final String NT_KEY = "superstructure";
@@ -351,7 +352,13 @@ public final class Superstructure implements Subsystem {
 		}
 	}
 
+	private final Timer m_climbDoneTimer = new Timer();
+
 	private SystemState handleClimbing_2() {
+		if (m_stateChanged) {
+			m_climbDoneTimer.reset();
+		}
+
 		if (Constants.DO_TRAP_CONFIGURATION) {
 			m_fintake.setForcedOut(true);
 			Climber.getInstance().setRetracted();
@@ -359,16 +366,27 @@ public final class Superstructure implements Subsystem {
 			m_arm.setTrapPose();
 			m_bender.setWantedState(Bender.State.TRAPPING);
 
-			if (m_stateChangedTimer.get() > 2.0) {
-				m_shooter.setVelocity(7.0, 7.0);
+			if (DO_FAST_TRAP) {
+				m_bender.setWantedState(Bender.State.TRAPPING);
+				if (Climber.getInstance().isRetracted()) {
+					if (m_climbDoneTimer.get() == 0.0) {
+						m_climbDoneTimer.start();
+						m_shooter.setVelocity(7.0, 7.0);
+					} else if (m_climbDoneTimer.get() > 0.25) {
+						m_fintake.setWantedState(Fintake.WantedState.AMPING);
+					}
+				} else {
+					m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+					m_shooter.setOff();
+				}
 			} else {
-				m_shooter.setOff();
-			}
-
-			if (Climber.getInstance().isRetracted()) {
+				m_bender.setWantedState(Bender.State.TRAPPING);
 				m_fintake.setWantedState(Fintake.WantedState.AMPING);
-			} else {
-				m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+				if (m_stateChangedTimer.get() > 2.0) {
+					m_shooter.setVelocity(7.0, 7.0);
+				} else {
+					m_shooter.setOff();
+				}
 			}
 		} else {
 			m_bender.setWantedState(Bender.State.STOWED);
@@ -404,23 +422,23 @@ public final class Superstructure implements Subsystem {
 			m_hasTriedToSpit = false;
 		}
 
-		if (m_stateChangedTimer.get() > 0.25) {
+		if (m_stateChangedTimer.get() > 0.3) {
 			m_shooter.setCatchingNote();
 		}
 
 		m_fintake.setWantedState(Fintake.WantedState.AMPING);
 
-		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
-			m_bender.setWantedState(Bender.State.STOWED);
-//			m_bender.setWantedState(Bender.State.WIGGLING);
-		} else {
-			m_bender.setWantedState(Bender.State.STOWED);
-		}
+//		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
+//			m_bender.setWantedState(Bender.State.STOWED);
+////			m_bender.setWantedState(Bender.State.WIGGLING);
+//		} else {
+//			m_bender.setWantedState(Bender.State.STOWED);
+//		}
 
 		if (m_stateWanted != WantedState.AMPING) {
 			m_arm.setWantedState(Arm.State.STOWED);
 			m_bender.setWantedState(Bender.State.STOWED);
-		} else if (m_stateChangedTimer.get() > 0.25) {
+		} else if (m_stateChangedTimer.get() > 0.3) {
 			m_arm.setWantedState(Arm.State.AMP);
 			m_bender.setWantedState(Bender.State.AMPING);
 		}
@@ -444,7 +462,7 @@ public final class Superstructure implements Subsystem {
 
 		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
 			if (OI.getInstance().getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
-				m_shooter.setVelocity(68.0, 68.0);
+				m_shooter.setVelocity(71.0, 71.0);
 			} else {
 				m_shooter.setVelocity(90.0, 90.0);
 			}

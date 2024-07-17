@@ -93,6 +93,6 @@ public final class OI {
 	}
 
 	public boolean getWantsNoteChase() {
-		return m_pilot.getLeftBumper();
+		return m_pilot.getLeftTriggerAxis() > 0.5 && !m_pilot.getLeftBumper();//m_pilot.getLeftBumper();
 	}
 }

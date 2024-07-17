@@ -16,8 +16,8 @@ public class AmpSideAuto123 extends SequentialCommandGroup {
 	public AmpSideAuto123() {
 		final var drive = Swerve.getInstance();
 		final var pathToFirstShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".1", true);
-		final var pathToSecondShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
-		final var pathToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".3", false);
+//		final var pathToSecondShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
+		final var pathToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + " 1" + ".2", false);
 		final var pathToThirdShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".1", false);
 		final var pathToFourthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".2", false);
 		final var pathToFifthShootLocation = drive.getTrackTrajectoryCommand(AUTO_NAME + " 2" + ".3", false);
@@ -28,25 +28,31 @@ public class AmpSideAuto123 extends SequentialCommandGroup {
 				new SetIntakeForcedOutCommand(true),
 				pathToFirstShootLocation,
 				new ShootNoteCommand(5.0, false),
+				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(true)),
 				new InstantCommand(() -> Constants.adjustShots(MOVING_SHOT_ADJUSTMENT)),
-				pathToSecondShootLocation,
-				new ShootCommand(0.45, true, false),
-				new InstantCommand(() -> Constants.adjustShots(-MOVING_SHOT_ADJUSTMENT)),
-				new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
-				new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),
-				new SetIntakeForcedOutCommand(false),
-				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
-				pathToPickup,
-				new WaitCommand(0.1),
-				pathToThirdShootLocation,
-				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
+				new ParallelDeadlineGroup(
+						new SequentialCommandGroup(
+								pathToPickup,
+								new WaitCommand(0.1),
+								pathToThirdShootLocation
+						),
+						new ShootCommand(0.4, true, false),
+						new InstantCommand(() -> Constants.adjustShots(-MOVING_SHOT_ADJUSTMENT)),
+						new InstantCommand(() -> Shooter.getInstance().setDoIdling(false)),
+						new InstantCommand(() -> Superstructure.getInstance().setWantsIntaking(false)),
+						new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+				),
+//				pathToPickup,
+//				new WaitCommand(0.1),
+//				pathToThirdShootLocation,
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				pathToFourthShootLocation,
-				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.INTAKING),
 				pathToFifthShootLocation,
-				new ShootNoteCommand(2.0, true).onlyIf(() -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetIntakeForcedOutCommand(false)
 		);
 	}

@@ -36,10 +36,9 @@ public final class Arm implements Subsystem {
 
     private final TalonFX m_elbow, m_shoulder;
     private final PeriodicIO m_periodicIO;
-    private final PositionVoltage m_elbowRequest;// = new MotionMagicExpoVoltage(0); //TODO initilize with arm's starting position
-    private final MotionMagicExpoVoltage m_shoulderRequest;// = new MotionMagicExpoVoltage(0); //TODO initilize with arm's starting position
+    private final PositionVoltage m_elbowRequest;
+    private final MotionMagicExpoVoltage m_shoulderRequest;
     private final CoastOut m_coast = new CoastOut();
-
 
     private static final Rotation2d FLIP_ANGLE = Rotation2d.fromRotations(0.5);
     private static final double SHOULDER_MIN = -0.081; // going to assume this is the default position

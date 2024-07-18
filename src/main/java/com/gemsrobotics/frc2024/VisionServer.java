@@ -1,7 +1,5 @@
 package com.gemsrobotics.frc2024;
 
-import com.gemsrobotics.lib.TimestampedValue;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.util.Units;
@@ -9,18 +7,17 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
 import java.util.Objects;
 import java.util.Optional;
 
-public class NewTargetServer implements Subsystem {
-	private static NewTargetServer INSTANCE;
+public class VisionServer implements Subsystem {
+	private static VisionServer INSTANCE;
 
-	public static NewTargetServer getInstance() {
+	public static VisionServer getInstance() {
 		if (Objects.isNull(INSTANCE)) {
-			INSTANCE = new NewTargetServer();
+			INSTANCE = new VisionServer();
 		}
 
 		return INSTANCE;
@@ -34,7 +31,7 @@ public class NewTargetServer implements Subsystem {
 	private final PeriodicIO m_periodicIO;
 	private final String m_name;
 
-	private NewTargetServer() {
+	private VisionServer() {
 		m_name = "";
 
 		String nt_key = "limelight_subsystem";
@@ -54,6 +51,7 @@ public class NewTargetServer implements Subsystem {
 
 		final var newEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(m_name);
 
+		// do not localize off of one tag while disabled
 		if (newEstimate.tagCount < 2 && DriverStation.isDisabled()) {
 			m_statePublisher.set("not enough tags");
 			m_periodicIO.estimate = Optional.empty();

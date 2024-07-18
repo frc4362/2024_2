@@ -8,8 +8,10 @@ public abstract class AllianceConstants {
     public abstract Rotation2d getSouth();
     public abstract Rotation2d getEast();
     public abstract Rotation2d getWest();
-    public abstract Rotation2d getPassAngle();
     public abstract Translation2d getSpeakerLocationMeters();
     public abstract Translation2d getAmpLocationMeters();
+    public abstract Translation2d getAmpZoneLocationMeters();
+    public abstract Translation2d getMiddleFeedLocationMeters();
     public abstract Translation2d getSourceLocationMeters();
+    public abstract boolean isLocationInOpposingWing(final Translation2d location);
 }

@@ -32,10 +32,11 @@ public class Robot extends TimedRobot {
 	private PowerDistribution m_pdh;
 
 	private StringPublisher m_translationPublisher;
+	private StringPublisher m_shotTypePublisher;
 	private DoublePublisher m_rotationPublisher;
 	private DoubleSubscriber m_shooterLeftRPS, m_shooterRightRPS;
 	private DoubleSubscriber m_feederDutyCycle;
-	private NewTargetServer m_vision;
+	private VisionServer m_vision;
 
 	private SendableChooser<Command> m_chooser;
 
@@ -46,7 +47,7 @@ public class Robot extends TimedRobot {
 		m_drive = Swerve.getInstance();
 		m_shooter = Shooter.getInstance();
 		m_fintake = Fintake.getInstance();
-		m_vision = NewTargetServer.getInstance();
+		m_vision = VisionServer.getInstance();
 		m_arm = Arm.getInstance();
 		m_climber = Climber.getInstance();
 		m_leds = LEDManager.getInstance();
@@ -57,6 +58,7 @@ public class Robot extends TimedRobot {
 		final NetworkTable myTable = NetworkTableInstance.getDefault().getTable(NT_KEY);
 		m_translationPublisher = myTable.getStringTopic("wanted_translation").publish();
 		m_rotationPublisher = myTable.getDoubleTopic("wanted_rotation").publish();
+		m_shotTypePublisher = myTable.getStringTopic("shot_type").publish();
 
 		m_shooterLeftRPS = myTable.getDoubleTopic("shooter_set_left_rps").subscribe(0.0);
 		m_shooterRightRPS = myTable.getDoubleTopic("shooter_set_right_rps").subscribe(0.0);
@@ -162,28 +164,17 @@ public class Robot extends TimedRobot {
 		m_translationPublisher.set(m_oi.getWantedSwerveTranslation().toString());
 		m_rotationPublisher.set(m_oi.getWantedSwerveRotation());
 
-		final boolean wantsPass;
-		final var shotOverride = m_oi.getCopilotShotOverride();
-		if (shotOverride.isEmpty()) {
-			m_superstructure.setOverrideParamsCleared();
-			wantsPass = false;
-		} else {
-			switch (shotOverride.get()) {
-				case SUBWOOFER -> m_superstructure.setOverrideShotParams(Constants.getShotParameters(0.0));
-				case FLAT -> m_superstructure.setOverrideShotParams(Constants.getFlatShot());
-				default -> m_superstructure.setOverrideParamsCleared();
-			}
-
-			wantsPass = shotOverride.get() != OI.OverrideShotType.SUBWOOFER;
-		}
+		final var shotType = m_superstructure.getShotType();
+		m_drive.setShotType(shotType);
+		m_shotTypePublisher.set(shotType.toString());
 
 		m_superstructure.setStrictLocalizationEnabled(m_oi.getCopilot().getStartButton() && m_oi.getCopilot().getBackButton());
 
-		if (m_oi.getPilot().getStartButtonPressed()) {
+		if (m_oi.getPilot().getBackButtonPressed()) {
 			m_drive.seedFieldRelative();
 		}
 
-		final var wantsAmp = m_oi.getPilot().getRightBumper();
+		final var wantsAmp = m_oi.getPilot().getStartButton();
 		final var wantsAmpSpit = m_oi.getPilot().getRightTriggerAxis() > 0.5;
 		final var wantsIntaking = m_oi.getPilot().getLeftTriggerAxis() > 0.5;
 
@@ -194,21 +185,6 @@ public class Robot extends TimedRobot {
 			m_drive.setOpenLoopFaceHeadingJoysticks(
 					m_oi.getWantedSwerveTranslation(),
 					Rotation2d.fromDegrees(-90));
-		} else if (wantsPass) {
-			if (m_oi.getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
-				final Rotation2d feedHeading = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red
-													   ? Rotation2d.fromRadians(-2.66) : Rotation2d.fromRadians(-0.5);
-//													   ? Rotation2d.fromRadians(-2.59) : Rotation2d.fromRadians(-0.57);
-				m_drive.setOpenLoopFaceHeadingJoysticks(
-						m_oi.getWantedSwerveTranslation(),
-						feedHeading);
-			} else {
-				m_drive.setOpenLoopJoysticks(
-						m_oi.getWantedSwerveTranslation(),
-						m_oi.getWantedSwerveRotation(),
-						true,
-						m_oi.getWantsEvasion());
-			}
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
@@ -255,7 +231,7 @@ public class Robot extends TimedRobot {
 		m_superstructure.setFeedingAllowed(m_oi.getPilot().getRightTriggerAxis() > 0.5);
 		if (wantsAmp && wantsAmpSpit) {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);
-		} else if (wantsPass && m_oi.getPilot().getRightTriggerAxis() > 0.5) {
+		} else if (m_oi.getPilot().getRightBumper()) {
 			m_superstructure.setWantedState(Superstructure.WantedState.PASSING);
 		} else if (wantsClimb2 && m_oi.getCopilot().getLeftTriggerAxis() > 0.5) {
 			// finish the job.........

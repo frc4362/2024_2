@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 import java.util.Optional;
 
 public final class Constants {
+	public static final String MAIN_BUS_NAME = "swerve";
+	public static final String AUX_BUS_NAME = "aux";
 
 	public static final boolean DO_TRAP_CONFIGURATION = true;
 
@@ -86,7 +88,7 @@ public final class Constants {
 	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
 	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
 
-	private static InterpolatingTreeMap<Double,ShotParam> SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
+	private static final InterpolatingTreeMap<Double,ShotParam> SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
 	static {
 		for (final double[] cals : SHOT_CALS) {
 			if (cals.length != 3) {
@@ -112,6 +114,41 @@ public final class Constants {
 		return new ShotParam(ret.getAngle().plus(Rotation2d.fromDegrees(SHOT_FLAT_ADJUSTMENT)), ret.getVelocityRps());
 	}
 
+	// distance, angle, velocity
+	private static final double[][] FEED_CALS = {
+			{1.0, 30.0, 70},
+			{2.0, 30.0, 70},
+	};
+
+	private static final ShotParam FEED_MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
+	private static final ShotParam FEED_MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
+
+	private static final InterpolatingTreeMap<Double,ShotParam> FEED_SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
+	static {
+		for (final double[] cals : FEED_CALS) {
+			if (cals.length != 3) {
+				continue;
+			}
+
+			FEED_SHOT_PARAMETERS.put(cals[0], new ShotParam(Rotation2d.fromDegrees(cals[1]), cals[2]));
+		}
+	}
+
+	public static ShotParam getFeedParameters(final double distanceMeters) {
+		ShotParam ret;
+
+		// first cal is subwoofer shot
+		if (distanceMeters < SHOT_CALS[1][0]) {
+			ret = FEED_MIN_SHOT;
+		} else if (distanceMeters > SHOT_CALS[SHOT_CALS.length - 1][0]) {
+			ret = FEED_MAX_SHOT;
+		} else {
+			ret = FEED_SHOT_PARAMETERS.get(distanceMeters);
+		}
+
+		return new ShotParam(ret.getAngle(), ret.getVelocityRps());
+	}
+
 	private static final ShotParam FLAT_SHOT = new ShotParam(Rotation2d.fromDegrees(0.0), 120.0);
 	public static ShotParam getFlatShot() {
 		return FLAT_SHOT;
@@ -128,7 +165,4 @@ public final class Constants {
 	static {
 		SWERVE_TURN_CONTROLLER.enableContinuousInput(-Math.PI, Math.PI);
 	}
-
-	public static final String MAIN_BUS_NAME = "swerve";
-	public static final String AUX_BUS_NAME = "aux";
 }

@@ -1,6 +1,7 @@
 package com.gemsrobotics.frc2024.subsystems;
 
 import com.gemsrobotics.frc2024.*;
+import com.gemsrobotics.frc2024.VisionServer;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 
@@ -21,13 +22,20 @@ import java.util.Optional;
 
 public final class Superstructure implements Subsystem {
 	private static final boolean DO_FAST_TRAP = true;
+	private static final boolean DO_LOCALIZED_FEEDING = true;
 	private static final boolean USE_DASHBOARD_SHOOTING = false;
-	private static final String GOAL_DISTANCE_KEY = "goal_distance";
+	private static final boolean DO_SHOT_PROTECTION = true;
+
+	private static final String SPEAKER_DISTANCE_KEY = "distance_speaker";
+	private static final String AMP_ZONE_DISTANCE_KEY = "distance_amp_zone";
+	private static final String MID_FEED_DISTANCE_KEY = "distance_mid_feed";
 	private static final String NT_KEY = "superstructure";
 	private static final String WANTED_STATE_KEY = "wanted_state";
 	private static final String SYSTEM_STATE_KEY = "system_state";
 	private static final String LOCALIZATION_STATE_KEY = "localization_state";
 	public static final double MAX_SHOOTING_SPEED_METERS_PER_SECOND = 0.5;
+	public static final String SHOOTER_ANGLE_SET_KEY = "shooter_angle_degrees";
+	public static final String SHOOTER_SPEED_SET_KEY = "shooter_set_rps";
 
 	public enum WantedState {
 		IDLE,
@@ -69,10 +77,10 @@ public final class Superstructure implements Subsystem {
 	private final Timer m_stateChangedTimer;
 	private final Arm m_arm;
 	private final Bender m_bender;
-	private final NewTargetServer m_targetServer;
+	private final VisionServer m_targetServer;
 	private final SimpleTargetServer m_simpleTargetServer;
 
-	private final DoublePublisher m_goalDistancePublisher;
+	private final DoublePublisher m_speakerDistancePublisher, m_ampZoneDistancePublisher, m_midFeedDistancePublisher;
 	private final StringPublisher m_wantedStatePublisher;
 	private final StringPublisher m_systemStatePublisher;
 	private final StringPublisher m_localizationStatePublisher;
@@ -100,7 +108,7 @@ public final class Superstructure implements Subsystem {
 		m_arm = Arm.getInstance();
 		m_drive = Swerve.getInstance();
 		m_shooter = Shooter.getInstance();
-		m_targetServer = NewTargetServer.getInstance();
+		m_targetServer = VisionServer.getInstance();
 		m_bender = Bender.getInstance();
 		m_leds = LEDManager.getInstance();
 		m_fintake = Fintake.getInstance();
@@ -127,7 +135,9 @@ public final class Superstructure implements Subsystem {
 		m_systemStatePublisher = myTable.getStringTopic(SYSTEM_STATE_KEY).publish();
 		m_localizationStatePublisher = myTable.getStringTopic(LOCALIZATION_STATE_KEY).publish();
 		m_shotParamPublisher = myTable.getStringTopic("shot_param").publish();
-		m_goalDistancePublisher = myTable.getDoubleTopic(GOAL_DISTANCE_KEY).publish();
+		m_speakerDistancePublisher = myTable.getDoubleTopic(SPEAKER_DISTANCE_KEY).publish();
+		m_ampZoneDistancePublisher = myTable.getDoubleTopic(AMP_ZONE_DISTANCE_KEY).publish();
+		m_midFeedDistancePublisher = myTable.getDoubleTopic(MID_FEED_DISTANCE_KEY).publish();
 		m_shootingStatePublisher = myTable.getStringArrayTopic("shooting_state").publish();
 
 		m_state = SystemState.IDLE;
@@ -147,8 +157,8 @@ public final class Superstructure implements Subsystem {
 		// telemetry
 		m_systemStatePublisher.set(m_state.toString());
 		m_wantedStatePublisher.set(m_stateWanted.toString());
-		double distanceToGoal = getDistanceToGoal();
-		m_goalDistancePublisher.set(distanceToGoal);
+		double distanceToGoal = getDistanceToSpeaker();
+		m_speakerDistancePublisher.set(distanceToGoal);
 		m_shotParamPublisher.set(getDesiredShotParams().toString());
 
 		final LocalizationState localizationState = updateLocalization();
@@ -229,11 +239,7 @@ public final class Superstructure implements Subsystem {
 		final var visionUpdate = m_targetServer.getLatestEstimate();
 		if (visionUpdate.isPresent()) {
 			final var update = visionUpdate.get();
-			final var newPose = update.pose;
-
-//			final var distanceFromCurrent = newPose.getTranslation().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
-//			final var distanceToTarget = m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
-
+			// MEGATAG 1
 			if (m_isStrictlyLocalizing) {
 				final var mt = LimelightHelpers.getBotPoseEstimate_wpiBlue("");
 
@@ -244,7 +250,7 @@ public final class Superstructure implements Subsystem {
 
 				m_drive.addVisionMeasurement(mt.pose, mt.timestampSeconds, VecBuilder.fill(.6,.6,0.0));
 				m_localizationStatePublisher.set("strictly localized");
-				return LocalizationState.LOCALIZED;
+			// MEGATAG 2
 			} else {
 				final double yawRate = m_drive.getPigeon2().getRate();
 
@@ -256,15 +262,13 @@ public final class Superstructure implements Subsystem {
 				m_drive.addVisionMeasurement(update.pose, update.timestampSeconds, VecBuilder.fill(.3,.3,9_999_999));
 
 				m_localizationStatePublisher.set("localized");
-				return LocalizationState.LOCALIZED;
 			}
+			return LocalizationState.LOCALIZED;
 		} else {
 			m_localizationStatePublisher.set("no targets detected (no update)");
 			return LocalizationState.NO_TARGET;
 		}
 	}
-
-	private static final boolean DO_SHOT_PROTECTION = true;
 	private boolean m_hasLoggedShot = true;
 	private SystemState handleShooting() {
 		if (m_stateChanged) {
@@ -286,7 +290,7 @@ public final class Superstructure implements Subsystem {
 			m_fintake.setWantedState(Fintake.WantedState.INTAKING_AND_SHOOTING);
 		} else if (isReadyToShoot(true) && m_feedingAllowed) {
 			if (!m_hasLoggedShot) {
-				m_logger.logShot(params, m_shooter.getMeasuredSpeed(), m_arm.getElbowAngle(), getDistanceToGoal());
+				m_logger.logShot(params, m_shooter.getMeasuredSpeed(), m_arm.getElbowAngle(), getDistanceToSpeaker());
 				m_hasLoggedShot = true;
 			}
 
@@ -298,6 +302,7 @@ public final class Superstructure implements Subsystem {
 
 		return applyWantedState();
 	}
+
 	private SystemState handleIntaking() {
 		if (m_stateChanged) {
 			m_fintake.clearPiece();
@@ -312,16 +317,12 @@ public final class Superstructure implements Subsystem {
 		} else {
 			m_shooter.setVelocity(-2.5, -2.5);
 		}
-//		m_ledManager.setLEDS(LEDstate.OFF);
+
 		return applyWantedState();
 	}
 
 	private boolean m_lockClimb = false;
 	private SystemState handlePreclimb() {
-//		if (m_stateChanged) {
-//			m_lockClimb = false;
-//		}
-
 		m_arm.setWantedState(Arm.State.STOWED);
 		if (m_wantsEarlyClimb || m_lockClimb) {
 			Climber.getInstance().setShortClimb();
@@ -412,28 +413,16 @@ public final class Superstructure implements Subsystem {
 		}
 		m_arm.setWantedState(Arm.State.STOWED);
 		m_bender.setWantedState(Bender.State.STOWED);
-//		m_ledManager.setLEDS(LEDstate.OFF);
+
 		return applyWantedState();
 	}
 
-	private boolean m_hasTriedToSpit = false;
 	private SystemState handleAmping() {
-		if (m_stateChanged) {
-			m_hasTriedToSpit = false;
-		}
-
 		if (m_stateChangedTimer.get() > 0.3) {
 			m_shooter.setCatchingNote();
 		}
 
 		m_fintake.setWantedState(Fintake.WantedState.AMPING);
-
-//		if (m_shooter.isNoteCaught() && m_shooter.isNoteHalfOutOrMore()) {
-//			m_bender.setWantedState(Bender.State.STOWED);
-////			m_bender.setWantedState(Bender.State.WIGGLING);
-//		} else {
-//			m_bender.setWantedState(Bender.State.STOWED);
-//		}
 
 		if (m_stateWanted != WantedState.AMPING) {
 			m_arm.setWantedState(Arm.State.STOWED);
@@ -509,8 +498,16 @@ public final class Superstructure implements Subsystem {
 		return stopped && shooterAtSpeed && turningFast && armElevationCorrect;
 	}
 
-	private double getDistanceToGoal() {
+	private double getDistanceToSpeaker() {
 		return m_allianceConstants.getSpeakerLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+	}
+
+	private double getDistanceToAmpZone() {
+		return m_allianceConstants.getAmpZoneLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
+	}
+
+	private double getDistanceToMidFeed() {
+		return m_allianceConstants.getMiddleFeedLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
 	}
 
 	private static final PIDController TARGET_PID = new PIDController(0.3, 0.0, 0.2);
@@ -520,16 +517,37 @@ public final class Superstructure implements Subsystem {
 
 	private ShotParam getDashboardShooterParams() {
 		return new ShotParam(
-				Rotation2d.fromDegrees(SmartDashboard.getNumber("shooter_angle_degrees", 0.0)),
-				SmartDashboard.getNumber("shooter_set_rps", 0.0));
+				Rotation2d.fromDegrees(SmartDashboard.getNumber(SHOOTER_ANGLE_SET_KEY, 0.0)),
+				SmartDashboard.getNumber(SHOOTER_SPEED_SET_KEY, 0.0));
+	}
+
+	public ShotType getShotType() {
+		final double speakerRange = getDistanceToSpeaker();
+
+		if (speakerRange < 6.0) {
+			return ShotType.SPEAKER;
+		} else if (m_allianceConstants.isLocationInOpposingWing(m_periodicIO.fieldToVehicle.getTranslation())) {
+			return ShotType.MID_FEED;
+		} else {
+			return ShotType.AMP_FEED;
+		}
 	}
 
 	private ShotParam getVisionShooterParam() {
-		return Constants.getShotParameters(getDistanceToGoal());
-	}
+		final var shotType = getShotType();
 
-	public Optional<Double> getGoalTurnFeedback() {
-		return m_targetServer.getFallbackCameraToTarget().map(tf -> TARGET_PID.calculate(-tf.getRotation().getRadians()));
+		if (shotType == ShotType.SPEAKER) {
+			return Constants.getShotParameters(getDistanceToSpeaker());
+		}
+
+		final double feedRange;
+		if (shotType == ShotType.MID_FEED) {
+			feedRange = getDistanceToMidFeed();
+		} else {
+			feedRange = getDistanceToAmpZone();
+		}
+
+		return Constants.getFeedParameters(feedRange);
 	}
 
 	public void setAlliance() {
@@ -579,24 +597,12 @@ public final class Superstructure implements Subsystem {
 		return m_overrideShotParam.orElseGet(this::getVisionShooterParam);
 	}
 
-	public void setShootWhileTurning(final boolean newTurningAllowed) {
-		m_shootWhileTurningAllowed = newTurningAllowed;
-	}
-
 	public void setFeedingAllowed(final boolean feedingAllowed) {
 		m_feedingAllowed = feedingAllowed;
 	}
 
 	public void setWantsEarlyClimb(final boolean earlyClimb) {
 		m_wantsEarlyClimb = earlyClimb;
-	}
-
-	public void requestFallbackShotRanging() {
-		m_wantsFallbackShotRanging = true;
-	}
-
-	public boolean isUsingFallbackAiming() {
-		return m_wantsFallbackShotRanging;
 	}
 
 	public SystemState getState() {

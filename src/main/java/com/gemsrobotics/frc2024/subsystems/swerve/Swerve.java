@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import com.choreo.lib.Choreo;
 import com.choreo.lib.ChoreoControlFunction;
@@ -15,13 +14,13 @@ import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
-import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.mechanisms.swerve.*;
 
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.gemsrobotics.frc2024.Constants;
 import com.gemsrobotics.frc2024.subsystems.NoteDetector;
+import com.gemsrobotics.frc2024.subsystems.ShotType;
 import com.gemsrobotics.lib.allianceconstants.AllianceConstants;
 import com.gemsrobotics.lib.math.Rotation2dPlus;
 import com.gemsrobotics.lib.math.Units;
@@ -33,7 +32,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.Measure;
@@ -95,6 +93,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     private final DoublePublisher m_velocityErrorPublisher;
     private final DoublePublisher m_angleToSpeaker;
     private final List<StatusSignal<Double>> m_voltageSignals, m_torqueSignals;
+    private ShotType m_shotType;
     private BaseStatusSignal[] m_baseSignals;
     private AllianceConstants m_allianceConstants;
 	private Optional<Rotation2d> m_maintainHeadingGoal;
@@ -223,6 +222,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
                 m_torqueSignals.get(3)
         };
 
+        m_shotType = ShotType.SPEAKER;
         m_allianceConstants = Constants.ALLIANCE_CONSTANTS_DEFAULT;
 		m_maintainHeadingGoal = Optional.empty();
     }
@@ -256,8 +256,12 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         }
     }
 
+    public void setShotType(final ShotType shotType) {
+        m_shotType = shotType;
+    }
+
     public Rotation2d getAimingError() {
-        return getAngleToSpeaker().minus(getState().Pose.getRotation());
+        return getAngleToGoal().minus(getState().Pose.getRotation());
     }
 
     /**
@@ -401,11 +405,11 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     }
 
     /**
-     * Automatically aims at the speaker which has been configured.
+     * Automatically aims at the target which has been configured.
      * @param joystickTranslation The joystick input to drive with.
      */
     public void setAimingAtGoal(final Translation2d joystickTranslation) {
-        setOpenLoopFaceHeadingJoysticks(joystickTranslation, getAngleToSpeaker());
+        setOpenLoopFaceHeadingJoysticks(joystickTranslation, getAngleToGoal());
     }
 
     /**
@@ -424,7 +428,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         setControl(m_brakeRequest);
     }
 
-    private Translation2d getAimingTarget() {
+    private Translation2d getSpeakerLocation() {
         var speakerLocation = m_allianceConstants.getSpeakerLocationMeters();
         if (getState().Pose.getTranslation().getDistance(speakerLocation) > 5.0) {
             speakerLocation = speakerLocation.plus(FAR_AIM_ADJUSTMENT);
@@ -433,8 +437,16 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         return speakerLocation;
     }
 
-    private Rotation2d getAngleToSpeaker() {
-        return getState().Pose.getTranslation().minus(getAimingTarget()).getAngle();
+    private Translation2d getGoalLocation() {
+        return switch (m_shotType) {
+            case SPEAKER -> getSpeakerLocation();
+            case AMP_FEED -> m_allianceConstants.getAmpZoneLocationMeters();
+            case MID_FEED -> m_allianceConstants.getMiddleFeedLocationMeters();
+        };
+    }
+
+    private Rotation2d getAngleToGoal() {
+        return getState().Pose.getTranslation().minus(getGoalLocation()).getAngle();
     }
 
     private boolean shouldFlipState() {
@@ -479,8 +491,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         return m_telemetry;
     }
 
-    public Command runDriveQuasiTest(SysIdRoutine.Direction direction)
-    {
+    public Command runDriveQuasiTest(SysIdRoutine.Direction direction) {
         return m_driveSysIdRoutine.quasistatic(direction);
     }
 

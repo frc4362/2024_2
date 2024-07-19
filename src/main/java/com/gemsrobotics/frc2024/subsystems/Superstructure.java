@@ -22,7 +22,6 @@ import java.util.Optional;
 
 public final class Superstructure implements Subsystem {
 	private static final boolean DO_FAST_TRAP = true;
-	private static final boolean DO_LOCALIZED_FEEDING = true;
 	private static final boolean USE_DASHBOARD_SHOOTING = false;
 	private static final boolean DO_SHOT_PROTECTION = true;
 
@@ -159,6 +158,8 @@ public final class Superstructure implements Subsystem {
 		m_wantedStatePublisher.set(m_stateWanted.toString());
 		double distanceToGoal = getDistanceToSpeaker();
 		m_speakerDistancePublisher.set(distanceToGoal);
+		m_ampZoneDistancePublisher.set(getDistanceToAmpZone());
+		m_midFeedDistancePublisher.set(getDistanceToMidFeed());
 		m_shotParamPublisher.set(getDesiredShotParams().toString());
 
 		final LocalizationState localizationState = updateLocalization();

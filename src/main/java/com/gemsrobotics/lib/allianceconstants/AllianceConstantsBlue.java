@@ -5,7 +5,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 
 public final class AllianceConstantsBlue extends AllianceConstants {
-    public static final Translation2d AMP_FEED_OFFSET = new Translation2d(1.0, -0.4);
+    public static final Translation2d AMP_FEED_OFFSET = new Translation2d(1.0, -0.0);
     public static final Translation2d AMP_TO_MID_OFFSET = new Translation2d(4.0, 0.0);
 
     public static final Rotation2d BLUE_NORTH = Rotation2d.fromDegrees(0);
@@ -15,7 +15,7 @@ public final class AllianceConstantsBlue extends AllianceConstants {
     public static final Translation2d BLUE_SPEAKER_METERS = new Translation2d(0., 5.5); // Approximated from Choreo points
     public static final Translation2d BLUE_AMP_METERS = new Translation2d(1.85, 8.15); // Approximated from Choreo points
     public static final Translation2d BLUE_SOURCE_METERS = new Translation2d(15.6, 0.575); //Approximated from Choreo points
-    public static final Translation2d BLUE_AMP_FEED_LOCATION_METERS = BLUE_AMP_METERS.plus(AMP_FEED_OFFSET);
+    public static final Translation2d BLUE_AMP_FEED_LOCATION_METERS = new Translation2d(2.5, 7.3);//BLUE_AMP_METERS.plus(AMP_FEED_OFFSET);
     public static final Translation2d BLUE_MID_FEED_LOCATION_METERS = BLUE_AMP_FEED_LOCATION_METERS.plus(AMP_TO_MID_OFFSET);
 
     public AllianceConstantsBlue() {}

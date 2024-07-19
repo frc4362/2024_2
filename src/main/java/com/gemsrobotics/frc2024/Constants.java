@@ -116,12 +116,12 @@ public final class Constants {
 
 	// distance, angle, velocity
 	private static final double[][] FEED_CALS = {
-			{1.0, 30.0, 70},
-			{2.0, 30.0, 70},
+			{1.0, 35.0, 68.5},
+			{2.0, 35.0, 68.5},
 	};
 
-	private static final ShotParam FEED_MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
-	private static final ShotParam FEED_MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);
+	private static final ShotParam FEED_MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(FEED_CALS[0][1]), FEED_CALS[0][2]);
+	private static final ShotParam FEED_MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(FEED_CALS[FEED_CALS.length - 1][1]), FEED_CALS[FEED_CALS.length - 1][2]);
 
 	private static final InterpolatingTreeMap<Double,ShotParam> FEED_SHOT_PARAMETERS = new InterpolatingTreeMap<Double,ShotParam>(InverseInterpolator.forDouble(), new ShotParamInterpolator());
 	static {

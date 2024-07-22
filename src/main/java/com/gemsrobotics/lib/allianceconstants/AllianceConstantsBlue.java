@@ -20,7 +20,6 @@ public final class AllianceConstantsBlue extends AllianceConstants {
 
     public AllianceConstantsBlue() {}
 
-
     @Override
     public Rotation2d getNorth() {
         return BLUE_NORTH;

@@ -21,20 +21,23 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class Superstructure implements Subsystem {
-	private static final boolean DO_FAST_TRAP = true;
 	private static final boolean USE_DASHBOARD_SHOOTING = false;
 	private static final boolean DO_SHOT_PROTECTION = true;
 
-	private static final String SPEAKER_DISTANCE_KEY = "distance_speaker";
-	private static final String AMP_ZONE_DISTANCE_KEY = "distance_amp_zone";
-	private static final String MID_FEED_DISTANCE_KEY = "distance_mid_feed";
 	private static final String NT_KEY = "superstructure";
 	private static final String WANTED_STATE_KEY = "wanted_state";
 	private static final String SYSTEM_STATE_KEY = "system_state";
 	private static final String LOCALIZATION_STATE_KEY = "localization_state";
-	public static final double MAX_SHOOTING_SPEED_METERS_PER_SECOND = 0.5;
-	public static final String SHOOTER_ANGLE_SET_KEY = "shooter_angle_degrees";
-	public static final String SHOOTER_SPEED_SET_KEY = "shooter_set_rps";
+	private static final String SPEAKER_DISTANCE_KEY = "distance_speaker";
+	private static final String AMP_ZONE_DISTANCE_KEY = "distance_amp_zone";
+	private static final String MID_FEED_DISTANCE_KEY = "distance_mid_feed";
+	private static final String SHOOTER_ANGLE_SET_KEY = "shooter_angle_degrees";
+	private static final String SHOOTER_SPEED_SET_KEY = "shooter_set_rps";
+	private static final String SHOT_PARAM_KEY = "shot_param";
+	private static final String SHOOTING_STATE_KEY = "shooting_state";
+	private static final String SHOT_TYPE_KEY = "shot_type";
+
+	private static final double MAX_SHOOTING_SPEED_METERS_PER_SECOND = 0.5;
 
 	public enum WantedState {
 		IDLE,
@@ -77,12 +80,12 @@ public final class Superstructure implements Subsystem {
 	private final Arm m_arm;
 	private final Bender m_bender;
 	private final VisionServer m_targetServer;
-	private final SimpleTargetServer m_simpleTargetServer;
 
 	private final DoublePublisher m_speakerDistancePublisher, m_ampZoneDistancePublisher, m_midFeedDistancePublisher;
 	private final StringPublisher m_wantedStatePublisher;
 	private final StringPublisher m_systemStatePublisher;
 	private final StringPublisher m_localizationStatePublisher;
+	private final StringPublisher m_shotTypePublisher;
 	private final StringPublisher m_shotParamPublisher;
 	private final StringArrayPublisher m_shootingStatePublisher;
 
@@ -92,15 +95,10 @@ public final class Superstructure implements Subsystem {
 	private WantedState m_stateWanted;
 	private boolean m_isStrictlyLocalizing;
 	private boolean m_stateChanged;
-	private boolean m_ampCanSpit;
 	private boolean m_wantsIntaking;
 	private boolean m_wantsEarlyClimb;
-	private boolean m_shootWhileTurningAllowed;
-	private boolean m_wantsFallbackShotRanging;
 	private boolean m_feedingAllowed;
 	private double m_lastBadTagTime;
-	private int m_tooFarVisionReadingCount;
-	private ShotLogger m_logger;
 	private PeriodicIO m_periodicIO;
 	
 	private Superstructure() {
@@ -111,19 +109,14 @@ public final class Superstructure implements Subsystem {
 		m_bender = Bender.getInstance();
 		m_leds = LEDManager.getInstance();
 		m_fintake = Fintake.getInstance();
-		m_simpleTargetServer = SimpleTargetServer.getInstance();
-		m_logger = new ShotLogger();
 		m_periodicIO = new PeriodicIO();
 
 		m_stateChanged = true;
 		m_isStrictlyLocalizing = true;
-		m_ampCanSpit = false;
 		m_wantsIntaking = false;
 		m_wantsEarlyClimb = false;
-		m_shootWhileTurningAllowed = false;
 		m_feedingAllowed = true;
 		m_stateChangedTimer = new Timer();
-		m_tooFarVisionReadingCount = 0;
 		m_lastBadTagTime = -1_000.0;
 		m_overrideShotParam = Optional.empty();
 
@@ -133,11 +126,12 @@ public final class Superstructure implements Subsystem {
 		m_wantedStatePublisher = myTable.getStringTopic(WANTED_STATE_KEY).publish();
 		m_systemStatePublisher = myTable.getStringTopic(SYSTEM_STATE_KEY).publish();
 		m_localizationStatePublisher = myTable.getStringTopic(LOCALIZATION_STATE_KEY).publish();
-		m_shotParamPublisher = myTable.getStringTopic("shot_param").publish();
+		m_shotParamPublisher = myTable.getStringTopic(SHOT_PARAM_KEY).publish();
 		m_speakerDistancePublisher = myTable.getDoubleTopic(SPEAKER_DISTANCE_KEY).publish();
 		m_ampZoneDistancePublisher = myTable.getDoubleTopic(AMP_ZONE_DISTANCE_KEY).publish();
 		m_midFeedDistancePublisher = myTable.getDoubleTopic(MID_FEED_DISTANCE_KEY).publish();
-		m_shootingStatePublisher = myTable.getStringArrayTopic("shooting_state").publish();
+		m_shotTypePublisher = myTable.getStringTopic(SHOT_TYPE_KEY).publish();
+		m_shootingStatePublisher = myTable.getStringArrayTopic(SHOOTING_STATE_KEY).publish();
 
 		m_state = SystemState.IDLE;
 		m_stateWanted = WantedState.IDLE;
@@ -153,6 +147,15 @@ public final class Superstructure implements Subsystem {
 		m_periodicIO.fieldToVehicle = m_drive.getState().Pose;
 		m_periodicIO.turnRate = m_drive.getPigeon2().getRate();
 
+		final LocalizationState localizationState = updateLocalization();
+		if (localizationState == LocalizationState.REJECTED_ON_DISTANCE) {
+			m_lastBadTagTime = Timer.getFPGATimestamp();
+		}
+
+		// update telemetry
+		final var shotType = getShotType();
+		m_drive.setShotType(shotType);
+
 		// telemetry
 		m_systemStatePublisher.set(m_state.toString());
 		m_wantedStatePublisher.set(m_stateWanted.toString());
@@ -160,12 +163,9 @@ public final class Superstructure implements Subsystem {
 		m_speakerDistancePublisher.set(distanceToGoal);
 		m_ampZoneDistancePublisher.set(getDistanceToAmpZone());
 		m_midFeedDistancePublisher.set(getDistanceToMidFeed());
+		m_shotTypePublisher.set(shotType.toString());
 		m_shotParamPublisher.set(getDesiredShotParams().toString());
 
-		final LocalizationState localizationState = updateLocalization();
-		if (localizationState == LocalizationState.REJECTED_ON_DISTANCE) {
-			m_lastBadTagTime = Timer.getFPGATimestamp();
-		}
 
 		if (OI.getInstance().getWantsNoteChase()
 					&& m_fintake.isIntakeDown()
@@ -243,7 +243,6 @@ public final class Superstructure implements Subsystem {
 			// MEGATAG 1
 			if (m_isStrictlyLocalizing) {
 				final var mt = LimelightHelpers.getBotPoseEstimate_wpiBlue("");
-
 				if (mt.pose.getTranslation().getNorm() == 0.0) {
 					m_localizationStatePublisher.set("no targets detected (no update)");
 					return LocalizationState.NO_TARGET;
@@ -254,28 +253,23 @@ public final class Superstructure implements Subsystem {
 			// MEGATAG 2
 			} else {
 				final double yawRate = m_drive.getPigeon2().getRate();
-
 				if (Math.abs(yawRate) > 720) {
 					m_localizationStatePublisher.set("turning too fast");
 					return LocalizationState.TURNING_TOO_FAST;
 				}
 
 				m_drive.addVisionMeasurement(update.pose, update.timestampSeconds, VecBuilder.fill(.3,.3,9_999_999));
-
 				m_localizationStatePublisher.set("localized");
 			}
+
 			return LocalizationState.LOCALIZED;
 		} else {
 			m_localizationStatePublisher.set("no targets detected (no update)");
 			return LocalizationState.NO_TARGET;
 		}
 	}
-	private boolean m_hasLoggedShot = true;
-	private SystemState handleShooting() {
-		if (m_stateChanged) {
-			m_hasLoggedShot = false;
-		}
 
+	private SystemState handleShooting() {
 		m_bender.setWantedState(Bender.State.STOWED);
 
 		final var params = getDesiredShotParams();
@@ -290,11 +284,6 @@ public final class Superstructure implements Subsystem {
 		if (m_wantsIntaking) {
 			m_fintake.setWantedState(Fintake.WantedState.INTAKING_AND_SHOOTING);
 		} else if (isReadyToShoot(true) && m_feedingAllowed) {
-			if (!m_hasLoggedShot) {
-				m_logger.logShot(params, m_shooter.getMeasuredSpeed(), m_arm.getElbowAngle(), getDistanceToSpeaker());
-				m_hasLoggedShot = true;
-			}
-
 			m_fintake.clearPiece();
 			m_fintake.setWantedState(Fintake.WantedState.SHOOTING);
 		} else {
@@ -361,39 +350,22 @@ public final class Superstructure implements Subsystem {
 			m_climbDoneTimer.reset();
 		}
 
-		if (Constants.DO_TRAP_CONFIGURATION) {
-			m_fintake.setForcedOut(true);
-			Climber.getInstance().setRetracted();
-			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-			m_arm.setTrapPose();
-			m_bender.setWantedState(Bender.State.TRAPPING);
+		Climber.getInstance().setRetracted();
+		m_fintake.setForcedOut(true);
+		m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
+		m_arm.setTrapPose();
+		m_bender.setWantedState(Bender.State.TRAPPING);
 
-			if (DO_FAST_TRAP) {
-				m_bender.setWantedState(Bender.State.TRAPPING);
-				if (Climber.getInstance().isRetracted()) {
-					if (m_climbDoneTimer.get() == 0.0) {
-						m_climbDoneTimer.start();
-						m_shooter.setVelocity(7.0, 7.0);
-					} else if (m_climbDoneTimer.get() > 0.25) {
-						m_fintake.setWantedState(Fintake.WantedState.AMPING);
-					}
-				} else {
-					m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-					m_shooter.setOff();
-				}
-			} else {
-				m_bender.setWantedState(Bender.State.TRAPPING);
+		if (Climber.getInstance().isRetracted()) {
+			if (m_climbDoneTimer.get() == 0.0) {
+				m_climbDoneTimer.start();
+				m_shooter.setVelocity(7.0, 7.0);
+			} else if (m_climbDoneTimer.get() > 0.25) {
 				m_fintake.setWantedState(Fintake.WantedState.AMPING);
-				if (m_stateChangedTimer.get() > 2.0) {
-					m_shooter.setVelocity(7.0, 7.0);
-				} else {
-					m_shooter.setOff();
-				}
 			}
 		} else {
-			m_bender.setWantedState(Bender.State.STOWED);
 			m_fintake.setWantedState(Fintake.WantedState.OUT_AND_OFF);
-			m_arm.setFinalClimb();
+			m_shooter.setOff();
 		}
 
 		return SystemState.CLIMBING_2;
@@ -442,20 +414,11 @@ public final class Superstructure implements Subsystem {
 	}
 
 	private SystemState handlePassing() {
-		if (OI.getInstance().getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
-			m_arm.setWantedState(Arm.State.PASSING);
-		} else {
-			m_arm.setWantedState(Arm.State.FLAT);
-		}
-
+		m_arm.setWantedState(Arm.State.FLAT);
 		m_bender.setWantedState(Bender.State.STOWED);
 
 		if (Timer.getFPGATimestamp() > m_fintake.getReadyToShootTime()) {
-			if (OI.getInstance().getCopilotShotOverride().map(type -> type == OI.OverrideShotType.OVER_STAGE).orElse(false)) {
-				m_shooter.setVelocity(71.0, 71.0);
-			} else {
-				m_shooter.setVelocity(90.0, 90.0);
-			}
+			m_shooter.setVelocity(90.0, 90.0);
 		} else {
 			m_shooter.setOff();
 		}
@@ -509,11 +472,6 @@ public final class Superstructure implements Subsystem {
 
 	private double getDistanceToMidFeed() {
 		return m_allianceConstants.getMiddleFeedLocationMeters().getDistance(m_periodicIO.fieldToVehicle.getTranslation());
-	}
-
-	private static final PIDController TARGET_PID = new PIDController(0.3, 0.0, 0.2);
-	static {
-		TARGET_PID.setTolerance(Rotation2d.fromDegrees(1.).getRadians());
 	}
 
 	private ShotParam getDashboardShooterParams() {
@@ -572,10 +530,6 @@ public final class Superstructure implements Subsystem {
 
 	public void setWantedState(final WantedState state) {
 		m_stateWanted = state;
-	}
-
-	public void setWantsAmpSpit(final boolean newWantsAmpSpit) {
-		m_ampCanSpit = newWantsAmpSpit;
 	}
 
 	public void setWantsIntaking(final boolean newIntaking) {

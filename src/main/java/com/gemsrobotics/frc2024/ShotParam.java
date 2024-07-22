@@ -2,9 +2,9 @@ package com.gemsrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 
-public class ShotParam {
-    private Rotation2d m_angle;
-    private double m_velocityRps;
+public final class ShotParam {
+    private final Rotation2d m_angle;
+    private final double m_velocityRps;
 
     public ShotParam(Rotation2d angle, double velocity) {
         m_angle = angle;
@@ -21,6 +21,6 @@ public class ShotParam {
 
     @Override
     public String toString() {
-        return String.format("(%.2f, %.2f)", m_angle.getDegrees(), m_velocityRps);
+        return String.format("(%.2f deg, %.2f rps)", m_angle.getDegrees(), m_velocityRps);
     }
 }

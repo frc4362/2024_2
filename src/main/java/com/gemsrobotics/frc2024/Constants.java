@@ -100,7 +100,7 @@ public final class Constants {
 	}
 
 	public static ShotParam getShotParameters(final double distanceMeters) {
-		ShotParam ret;
+		final ShotParam ret;
 
 		// first cal is subwoofer shot
 		if (distanceMeters < SHOT_CALS[1][0]) {
@@ -149,20 +149,10 @@ public final class Constants {
 		return new ShotParam(ret.getAngle(), ret.getVelocityRps());
 	}
 
-	private static final ShotParam FLAT_SHOT = new ShotParam(Rotation2d.fromDegrees(0.0), 120.0);
-	public static ShotParam getFlatShot() {
-		return FLAT_SHOT;
-	}
-
 	public static void adjustShots(final double degrees) {
 		SHOT_FLAT_ADJUSTMENT += degrees;
 	}
 
 	public static final double MAX_SUGGESTED_RANGE_METERS = 5.3;
 	public static final double LED_SHUTOFF_RANGE_METERS = 8.0;
-
-	public static final PIDController SWERVE_TURN_CONTROLLER = new PIDController(5.0, 0, 0);
-	static {
-		SWERVE_TURN_CONTROLLER.enableContinuousInput(-Math.PI, Math.PI);
-	}
 }

@@ -32,10 +32,7 @@ public class Robot extends TimedRobot {
 	private PowerDistribution m_pdh;
 
 	private StringPublisher m_translationPublisher;
-	private StringPublisher m_shotTypePublisher;
 	private DoublePublisher m_rotationPublisher;
-	private DoubleSubscriber m_shooterLeftRPS, m_shooterRightRPS;
-	private DoubleSubscriber m_feederDutyCycle;
 	private VisionServer m_vision;
 
 	private SendableChooser<Command> m_chooser;
@@ -58,11 +55,6 @@ public class Robot extends TimedRobot {
 		final NetworkTable myTable = NetworkTableInstance.getDefault().getTable(NT_KEY);
 		m_translationPublisher = myTable.getStringTopic("wanted_translation").publish();
 		m_rotationPublisher = myTable.getDoubleTopic("wanted_rotation").publish();
-		m_shotTypePublisher = myTable.getStringTopic("shot_type").publish();
-
-		m_shooterLeftRPS = myTable.getDoubleTopic("shooter_set_left_rps").subscribe(0.0);
-		m_shooterRightRPS = myTable.getDoubleTopic("shooter_set_right_rps").subscribe(0.0);
-		m_feederDutyCycle = myTable.getDoubleTopic("feeder_duty").subscribe(0.0);
 
 		SmartDashboard.putNumber("shooter_set_rps", 85.0);
 		SmartDashboard.putNumber("shooter_angle_degrees", 0.0);
@@ -164,10 +156,6 @@ public class Robot extends TimedRobot {
 		m_translationPublisher.set(m_oi.getWantedSwerveTranslation().toString());
 		m_rotationPublisher.set(m_oi.getWantedSwerveRotation());
 
-		final var shotType = m_superstructure.getShotType();
-		m_drive.setShotType(shotType);
-		m_shotTypePublisher.set(shotType.toString());
-
 		m_superstructure.setStrictLocalizationEnabled(m_oi.getCopilot().getStartButton() && m_oi.getCopilot().getBackButton());
 
 		if (m_oi.getPilot().getBackButtonPressed()) {
@@ -179,7 +167,6 @@ public class Robot extends TimedRobot {
 		final var wantsIntaking = m_oi.getPilot().getLeftTriggerAxis() > 0.5;
 
 		m_superstructure.setWantsIntaking(m_oi.getPilot().getLeftTriggerAxis() > 0.5);
-		m_superstructure.setWantsAmpSpit(wantsAmpSpit);
 
 		if (wantsAmp) {
 			m_drive.setOpenLoopFaceHeadingJoysticks(

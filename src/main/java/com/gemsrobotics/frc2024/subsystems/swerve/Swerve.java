@@ -91,7 +91,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     private final List<DoublePublisher> m_torquePublishers;
     private final DoublePublisher m_trajectoryErrorPublisher;
     private final DoublePublisher m_velocityErrorPublisher;
-    private final DoublePublisher m_angleToSpeaker;
+    private final DoublePublisher m_angleToGoal;
     private final List<StatusSignal<Double>> m_voltageSignals, m_torqueSignals;
     private ShotType m_shotType;
     private BaseStatusSignal[] m_baseSignals;
@@ -209,7 +209,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
 
         configNeutralMode(NeutralModeValue.Brake);
 
-        m_angleToSpeaker = myTable.getDoubleTopic("shooter_to_speaker_degrees").publish();
+        m_angleToGoal = myTable.getDoubleTopic("shooter_to_goal_degrees").publish();
 
         m_baseSignals = new BaseStatusSignal[] {
                 m_voltageSignals.get(0),
@@ -246,7 +246,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     public void periodic() {
         BaseStatusSignal.refreshAll(m_baseSignals);
 
-        m_angleToSpeaker.set(getAimingError().getDegrees());
+        m_angleToGoal.set(getAimingError().getDegrees());
         for (int i = 0; i < m_voltagePublishers.size(); i++) {
             m_voltagePublishers.get(i).set(m_voltageSignals.get(i).getValue());
         }
@@ -336,10 +336,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
     }
 
     private static final double kP = 4.0;
-    public void setOpenLoopNoteChasing(
-            final Translation2d joystickTranslation,
-            final double joystickRotationRate
-    ) {
+    public void setOpenLoopNoteChasing(final Translation2d joystickTranslation, final double joystickRotationRate) {
         Optional<Rotation2d> vehicleToNoteRotation = NoteDetector.getInstance().getVehicleToNoteRotation();
 
         // if we don't see a note, exit early
@@ -367,7 +364,7 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
             m_teleopRequest.RotationalRate = correction;
 
             setControl(m_teleopRequest);
-            // otherwise be normal
+        // otherwise be normal
         } else {
             setOpenLoopJoysticks(joystickTranslation, joystickRotationRate, false, false);
         }

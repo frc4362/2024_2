@@ -25,8 +25,6 @@ public final class Shooter implements Subsystem {
 	private static final String NT_KEY = "shooter";
 
 	private static final double SHOOTER_RATIO = 1.0 / 1.42; // 1 motor rotation is 1.7 shooter wheel rotations
-	private static final double NOTE_DETECTED_AMPS = 30.0;
-	private static final double IDLE_VELOCITY_RPS = 0.0;//2.0;
 
 	private static Shooter INSTANCE;
 	public static Shooter getInstance() {
@@ -247,21 +245,8 @@ public final class Shooter implements Subsystem {
 		}
 	}
 
-	public double getMeasuredSpeed() {
-		return m_periodicIO.filteredVelocityLeftRPS;
-	}
-
 	public double getMeasuredCurrentDraw() {
 		return m_currentDrawLeft.getValue();
-	}
-
-	public boolean isNoteCaught() {
-		return m_periodicIO.isNoteCaught;
-	}
-
-	public boolean isNoteHalfOutOrMore() {
-		final var p = m_positionLeft.getValue();
-		return isNear(p, m_periodicIO.catchNoteGoal, 0.25) || p > m_periodicIO.catchNoteGoal;
 	}
 
 	public boolean isReadyToShoot() {
@@ -291,19 +276,6 @@ public final class Shooter implements Subsystem {
 		m_periodicIO.state = State.OFF;
 		m_periodicIO.referenceVelocityLeftRPS = 0.0;
 		m_periodicIO.referenceVelocityRightRPS = 0.0;
-	}
-
-	public void setIdle() {
-		m_periodicIO.state = State.IDLE;
-		m_periodicIO.referenceVelocityLeftRPS = IDLE_VELOCITY_RPS;
-		m_periodicIO.referenceVelocityRightRPS = IDLE_VELOCITY_RPS;
-	}
-
-	public void setSpitting() {
-		if (m_periodicIO.state != State.SPITTING_NOTE) {
-			m_periodicIO.state = State.SPITTING_NOTE;
-			m_spitRequest.Position = m_positionLeft.getValue() + 10.0;
-		}
 	}
 
 	public void setCatchingNote() {

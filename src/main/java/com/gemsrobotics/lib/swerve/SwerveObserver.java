@@ -1,6 +1,5 @@
 package com.gemsrobotics.lib.swerve;
 
-import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain.SwerveDriveState;
 
 import com.gemsrobotics.frc2024.Constants;
@@ -22,7 +21,6 @@ import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
-import java.util.Objects;
 import java.util.Optional;
 
 public final class SwerveObserver implements Sendable {
@@ -138,7 +136,7 @@ public final class SwerveObserver implements Sendable {
     }
 
     @Override
-    public void initSendable(SendableBuilder builder) {
+    public void initSendable(final SendableBuilder builder) {
         builder.setSmartDashboardType("SwerveDrive");
 
         builder.addDoubleProperty("Front Left Angle", () -> latestState.map(s -> s.ModuleStates[0].angle.getRotations()).orElse(0.0), null);
@@ -156,7 +154,7 @@ public final class SwerveObserver implements Sendable {
         builder.addDoubleProperty("Robot Angle", () -> latestState.map(s -> s.Pose.getRotation().getRotations() + m_allianceConstants.getNorth().getRotations()).orElse(0.0), null);
     }
 
-    public void setAllianceConstants(AllianceConstants allianceConstants) {
+    public void setAllianceConstants(final AllianceConstants allianceConstants) {
         m_allianceConstants = allianceConstants;
     }
 }

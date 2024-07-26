@@ -47,8 +47,8 @@ public class KAS540 extends SequentialCommandGroup {
 				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
 				new ParallelDeadlineGroup(
 						new SequentialCommandGroup(
-								driveToPreload,
-								new ApproachNoteCommand(1),
+								driveToPreload, // drive most of the way to est. preload location
+								new ApproachNoteCommand(1), // use vision to find the note once nearby
 								new WaitCommand(0.1), // bouncing lol
 								driveTo3rdShot
 						),

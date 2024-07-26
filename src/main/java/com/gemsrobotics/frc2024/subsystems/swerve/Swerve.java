@@ -370,6 +370,30 @@ public final class Swerve extends SwerveDrivetrain implements Subsystem {
         }
     }
 
+    public boolean approachNote() {
+        Optional<Rotation2d> vehicleToNoteRotation = NoteDetector.getInstance().getVehicleToNoteRotation();
+
+        // if we don't see a note, exit early
+        if (vehicleToNoteRotation.isEmpty()) {
+            return false;
+        }
+
+        final Rotation2d fieldToVehicleRotation = getState().Pose.getRotation();
+        final Rotation2d vehicleToNote = vehicleToNoteRotation.get();
+        final var correction = kP * vehicleToNote.getRadians();
+        final var pointedTranslation = new Translation2d(1, fieldToVehicleRotation.plus(vehicleToNote));
+
+        m_maintainHeadingGoal = Optional.empty();
+
+        m_teleopRequest.VelocityX = pointedTranslation.getX();
+        m_teleopRequest.VelocityY = pointedTranslation.getY();
+        m_teleopRequest.Evading = false;
+        m_teleopRequest.RotationalRate = correction;
+
+        setControl(m_teleopRequest);
+        return true;
+    }
+
 	public void setOpenLoopFaceHeadingJoysticks(final Translation2d joystickTranslation, final Rotation2d heading) {
 		final var scaledTranslation = makeOpenLoopTranslation(joystickTranslation, true);
 		setOpenLoopFaceHeading(scaledTranslation, heading);

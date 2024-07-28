@@ -7,10 +7,7 @@ import com.gemsrobotics.frc2024.commands.ShootNoteCommand;
 import com.gemsrobotics.frc2024.subsystems.Fintake;
 import com.gemsrobotics.frc2024.subsystems.Superstructure;
 import com.gemsrobotics.frc2024.subsystems.swerve.Swerve;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.*;
 
 public class KAS540 extends SequentialCommandGroup {
 

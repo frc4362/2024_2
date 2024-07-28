@@ -40,7 +40,7 @@ public class Fintake implements Subsystem {
 	public static final double INTAKE_STARTING_ROTATIONS = -0.22;
 	public static final double INTAKE_UNPRESS_ROTATIONS = -0.17;
 	public static final double INTAKE_HORIZONTAL_ROTATIONS = 0.0;
-	public static final double INTAKE_DEPLOYED_ROTATIONS = 0.14;
+	public static final double INTAKE_DEPLOYED_ROTATIONS = 0.136;
 
 	public static final double INTAKE_AMPING_ROTATIONS = -0.17;
 

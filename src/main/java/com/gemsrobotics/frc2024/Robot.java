@@ -76,18 +76,19 @@ public class Robot extends TimedRobot {
 
 		m_chooser = new SendableChooser<>();
 		m_chooser.setDefaultOption("None", new WaitCommand(1.0));
-		m_chooser.addOption("Pick this auto to race Jackets", new SourceSideAutoRace());
+//		m_chooser.addOption("Pick this auto to race Jackets", new SourceSideAutoRace());
 //		m_chooser.addOption("Worlds race", new NutronsRace());
 //		m_chooser.addOption("Worlds NO RACE", new WorldsNoRace());
-		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto123());
-		m_chooser.addOption("Amp-Side Auto 213", new AmpSideAuto213());
-		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
-		m_chooser.addOption("Source-Side 532", new SourceSideAuto134());
-		m_chooser.addOption("Source-Side 435", new Source435());
-		m_chooser.addOption("Source-Side 345", new Source345());
-		m_chooser.addOption("Source-Side 432", new Source432());
-		m_chooser.addOption("Source-Side 534", new SourceSideAuto534());
+//		m_chooser.addOption("Amp-Side Auto 123", new AmpSideAuto123());
+//		m_chooser.addOption("Amp-Side Auto 213", new AmpSideAuto213());
+//		m_chooser.addOption("Source-Side 543", new SourceSideAuto1First());
+//		m_chooser.addOption("Source-Side 532", new SourceSideAuto134());
+//		m_chooser.addOption("Source-Side 435", new Source435());
+//		m_chooser.addOption("Source-Side 345", new Source345());
+//		m_chooser.addOption("Source-Side 432", new Source432());
+//		m_chooser.addOption("Source-Side 534", new SourceSideAuto534());
 		m_chooser.addOption("KAS 543", new KAS543());
+		m_chooser.addOption("KAS 53", new KAS53());
 		m_chooser.addOption("KAS 453", new KAS453());
 		m_chooser.addOption("KAS 540", new KAS540());
 		m_chooser.addOption("ApproachNote Test", new ApproachNoteTest());

@@ -89,6 +89,9 @@ public class Robot extends TimedRobot {
 //		m_chooser.addOption("Source-Side 534", new SourceSideAuto534());
 		m_chooser.addOption("KAS 543", new KAS543());
 		m_chooser.addOption("KAS 53", new KAS53());
+		m_chooser.addOption("KAS 54", new KAS54());
+		m_chooser.addOption("KAS 45", new KAS45());
+		m_chooser.addOption("KAS 43", new KAS43());
 		m_chooser.addOption("KAS 453", new KAS453());
 		m_chooser.addOption("KAS 540", new KAS540());
 		m_chooser.addOption("ApproachNote Test", new ApproachNoteTest());

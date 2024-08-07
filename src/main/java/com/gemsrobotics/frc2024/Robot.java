@@ -223,7 +223,7 @@ public class Robot extends TimedRobot {
 			m_fintake.setIntakeReset();
 		}
 
-		m_superstructure.setFeedingAllowed(m_oi.getPilot().getRightTriggerAxis() > 0.5);
+		m_superstructure.setFeedingAllowed(m_oi.getPilot().getRightTriggerAxis() > 0.5 || m_oi.getPilot().getRightBumper());
 		if (wantsAmp && wantsAmpSpit) {
 			m_superstructure.setWantedState(Superstructure.WantedState.AMPING);
 		} else if (m_oi.getPilot().getRightBumper()) {

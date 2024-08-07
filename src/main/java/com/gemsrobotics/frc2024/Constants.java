@@ -120,7 +120,7 @@ public final class Constants {
 			{7.3, 35.0, 64.0},
 			{8.0, 35.0, 66.5},
 			{9.5, 35.0, 69.5},
-			{11.0, 32.0, 72.5},
+			{11.0, 30.5, 78.0},
 	};
 
 	private static final ShotParam FEED_MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(FEED_CALS[0][1]), FEED_CALS[0][2]);

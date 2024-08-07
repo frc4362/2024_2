@@ -41,28 +41,28 @@ public class KAS453 extends SequentialCommandGroup {
 								driveTo1stShot
 						),
 						new SequentialCommandGroup(
-								new WaitCommand(0.25),
-								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+								new WaitCommand(0.25)//,
+//								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(1.0), () -> Fintake.getInstance().isHoldingPiece()),
 				new ParallelDeadlineGroup(
 						driveTo2ndShot,
 						new SequentialCommandGroup(
-								new WaitCommand(0.25),
-								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+								new WaitCommand(0.25)//,
+//								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(1.0), () -> Fintake.getInstance().isHoldingPiece()),
 				new ParallelDeadlineGroup(
 						driveTo3rdShot,
 						new SequentialCommandGroup(
-								new WaitCommand(0.25),
-								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
+								new WaitCommand(0.25)//,
+//								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
 				new SetIntakeForcedOutCommand(false),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(1.0), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.IDLE),
 				driveToMiddle
 		);

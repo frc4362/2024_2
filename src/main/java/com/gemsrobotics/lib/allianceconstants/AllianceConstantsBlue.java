@@ -16,7 +16,7 @@ public final class AllianceConstantsBlue extends AllianceConstants {
     public static final Translation2d BLUE_AMP_METERS = new Translation2d(1.85, 8.15); // Approximated from Choreo points
     public static final Translation2d BLUE_SOURCE_METERS = new Translation2d(15.6, 0.575); //Approximated from Choreo points
     public static final Translation2d BLUE_AMP_FEED_LOCATION_METERS = new Translation2d(2.5, 7.3);//BLUE_AMP_METERS.plus(AMP_FEED_OFFSET);
-    public static final Translation2d BLUE_MID_FEED_LOCATION_METERS = new Translation2d(7.0, 8.15);
+    public static final Translation2d BLUE_MID_FEED_LOCATION_METERS = new Translation2d(6.7, 8.5);
 
     public AllianceConstantsBlue() {}
 

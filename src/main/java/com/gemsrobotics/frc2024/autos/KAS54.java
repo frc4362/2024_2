@@ -46,7 +46,7 @@ public class KAS54 extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.75), () -> Fintake.getInstance().isHoldingPiece()),
 				new ParallelDeadlineGroup(
 						new SequentialCommandGroup(
 								driveTo2ndPickup,
@@ -58,7 +58,7 @@ public class KAS54 extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.75), () -> Fintake.getInstance().isHoldingPiece()),
 //				new ParallelDeadlineGroup(
 //						driveTo3rdShot,
 //						new SequentialCommandGroup(

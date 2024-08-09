@@ -83,7 +83,7 @@ public final class Constants {
 //	{5.5, 8.7, 120.0},
 //	{5.8, 8.5, 120.0},
 
-	private static double SHOT_FLAT_ADJUSTMENT = 2.0;//2.0;
+	private static double SHOT_FLAT_ADJUSTMENT = 0.35;//2.0;
 
 	private static final ShotParam MIN_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[0][1]), SHOT_CALS[0][2]);
 	private static final ShotParam MAX_SHOT = new ShotParam(Rotation2d.fromDegrees(SHOT_CALS[SHOT_CALS.length - 1][1]), SHOT_CALS[SHOT_CALS.length - 1][2]);

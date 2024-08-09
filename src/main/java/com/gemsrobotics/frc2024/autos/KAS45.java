@@ -19,7 +19,7 @@ public class KAS45 extends SequentialCommandGroup {
 		final var drive = Swerve.getInstance();
 		final var driveToPickup = drive.getTrackTrajectoryCommand(AUTO_NAME + ".1", true);
 		// .2 is skipped to account for drift
-		final var driveTo1stShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", true);
+		final var driveTo1stShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".3", false);
 		final var driveTo2ndShot = drive.getTrackTrajectoryCommand(AUTO_NAME + ".4", false);
 		final var driveToMiddle = drive.getTrackTrajectoryCommand(AUTO_NAME + ".5", false);
 
@@ -36,7 +36,7 @@ public class KAS45 extends SequentialCommandGroup {
 				new ParallelDeadlineGroup(
 						new SequentialCommandGroup(
 								driveToPickup,
-								new WaitCommand(0.1), // bouncing lol
+								new WaitCommand(0.25), // bouncing lol
 								driveTo1stShot
 						),
 						new SequentialCommandGroup(
@@ -44,7 +44,7 @@ public class KAS45 extends SequentialCommandGroup {
 								new SetWantedStateCommand(Superstructure.WantedState.INTAKING)
 						)
 				),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.75), () -> Fintake.getInstance().isHoldingPiece()),
 				new ParallelDeadlineGroup(
 						driveTo2ndShot,
 						new SequentialCommandGroup(
@@ -53,8 +53,9 @@ public class KAS45 extends SequentialCommandGroup {
 						)
 				),
 				new SetIntakeForcedOutCommand(false),
-				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.75), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.IDLE),
+				new WaitCommand(0.25),
 				driveToMiddle
 		);
 	}

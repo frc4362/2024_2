@@ -176,14 +176,20 @@ public class Robot extends TimedRobot {
 
 		m_superstructure.setWantsIntaking(m_oi.getPilot().getLeftTriggerAxis() > 0.5);
 
+		if (DriverStation.isTeleopEnabled()) {
+			m_fintake.setForcedOut(OI.getInstance().getCopilot().getLeftTriggerAxis() > 0.5);
+		}
+
 		if (wantsAmp) {
 			m_drive.setOpenLoopFaceHeadingJoysticks(
 					m_oi.getWantedSwerveTranslation(),
 					Rotation2d.fromDegrees(-90));
 		} else if (m_oi.getPilot().getRightTriggerAxis() > 0.5
+						   && !m_oi.getPilot().getRightBumper()
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING
 						   && m_superstructure.getState() != Superstructure.SystemState.CLIMBING_2
 						   && !m_oi.getCopilot().getXButton()
+					   	   && m_oi.getCopilot().getPOV() == -1
 		) {
 			m_drive.setAimingAtGoal(m_oi.getWantedSwerveTranslation());
 		} else if (m_oi.getWantsNoteChase()) {

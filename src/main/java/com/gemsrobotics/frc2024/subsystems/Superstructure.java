@@ -77,6 +77,7 @@ public final class Superstructure implements Subsystem {
 	private final Fintake m_fintake;
 	private final LEDManager m_leds;
 	private final Timer m_stateChangedTimer;
+	private final Timer m_autoClimbStartTimer;
 	private final Arm m_arm;
 	private final Bender m_bender;
 	private final VisionServer m_targetServer;
@@ -117,6 +118,7 @@ public final class Superstructure implements Subsystem {
 		m_wantsEarlyClimb = false;
 		m_feedingAllowed = true;
 		m_stateChangedTimer = new Timer();
+		m_autoClimbStartTimer = new Timer();
 		m_lastBadTagTime = -1_000.0;
 		m_overrideShotParam = Optional.empty();
 
@@ -165,7 +167,6 @@ public final class Superstructure implements Subsystem {
 		m_midFeedDistancePublisher.set(getDistanceToMidFeed());
 		m_shotTypePublisher.set(shotType.toString());
 		m_shotParamPublisher.set(getDesiredShotParams().toString());
-
 
 		if (OI.getInstance().getWantsNoteChase()
 					&& m_fintake.isIntakeDown()
@@ -335,8 +336,10 @@ public final class Superstructure implements Subsystem {
 			m_arm.setWantedState(Arm.State.STOWED);
 		}
 
+		if (m_arm.isTrapExtended()) {
+			return SystemState.CLIMBING_2;
 		// magic number
-		if (m_arm.getShoulderRotation() > -0.04 && m_stateWanted != WantedState.CLIMBING_2) {
+		} if (m_arm.getShoulderRotation() > -0.04 && m_stateWanted != WantedState.CLIMBING_2) {
 			return SystemState.CLIMBING;
 		} else {
 			return applyWantedState();
@@ -348,6 +351,11 @@ public final class Superstructure implements Subsystem {
 	private SystemState handleClimbing_2() {
 		if (m_stateChanged) {
 			m_climbDoneTimer.reset();
+			m_autoClimbStartTimer.start();
+		}
+
+		if (m_stateChangedTimer.get() < 0.25) {
+			return SystemState.CLIMBING_2;
 		}
 
 		Climber.getInstance().setRetracted();

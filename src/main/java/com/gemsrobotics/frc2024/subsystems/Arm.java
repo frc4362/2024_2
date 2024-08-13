@@ -268,4 +268,8 @@ public final class Arm implements Subsystem {
     public boolean atReference() {
         return atReference(0.01, 0.01);
     }
+
+    public boolean isTrapExtended() {
+        return m_periodicIO.shoulderRotation > 0.165 && m_periodicIO.elbowRotation > 0.38;
+    }
 }

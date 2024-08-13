@@ -67,7 +67,7 @@ public class KAS53 extends SequentialCommandGroup {
 //						)
 //				),
 				new SetIntakeForcedOutCommand(false),
-//				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
+				new ConditionalCommand(new ShootNoteCommand(2.0, true), new WaitCommand(0.25), () -> Fintake.getInstance().isHoldingPiece()),
 				new SetWantedStateCommand(Superstructure.WantedState.IDLE),
 				driveToMiddle
 		);
